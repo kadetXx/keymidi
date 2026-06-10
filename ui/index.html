@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>KeyMIDI</title>
+<style>
+  :root {
+    --panel: #16181c;        /* brushed charcoal faceplate */
+    --panel-raised: #1e2127;
+    --line: #2a2e36;
+    --ink: #e8e6df;          /* warm off-white silkscreen */
+    --ink-dim: #8a8f99;
+    --led-amber: #ffb347;    /* vintage hardware LED */
+    --led-amber-glow: rgba(255, 179, 71, 0.45);
+    --led-off: #3a3e46;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --sans: -apple-system, "SF Pro Text", system-ui, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 320px;
+    height: 480px;
+    background: var(--panel);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 13px;
+    overflow: hidden;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------------------------------------------------- header / power */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand {
+    font-family: var(--mono);
+    font-size: 14px;
+    letter-spacing: 0.16em;
+    font-weight: 600;
+  }
+  .brand .dim { color: var(--ink-dim); }
+
+  /* hardware-style power switch */
+  .power {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .power-led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--led-off);
+    transition: background 120ms, box-shadow 120ms;
+  }
+  .power-track {
+    width: 44px;
+    height: 22px;
+    border-radius: 4px;               /* square-ish: a switch, not an iOS toggle */
+    background: var(--panel-raised);
+    border: 1px solid var(--line);
+    position: relative;
+    transition: border-color 120ms;
+  }
+  .power-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 16px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #4a4f59, #34383f);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    transition: left 120ms ease-out;
+  }
+  body.on .power-thumb { left: 22px; background: linear-gradient(180deg, #ffc46b, #e89a2e); }
+  body.on .power-led {
+    background: var(--led-amber);
+    box-shadow: 0 0 8px var(--led-amber-glow);
+  }
+  body.on .power-track { border-color: var(--led-amber); }
+
+  /* ---------------------------------------------------------- sections */
+  section { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+
+  .label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  /* mode selector — three flush hardware buttons */
+  .modes { display: flex; gap: 6px; }
+  .mode-btn {
+    flex: 1;
+    padding: 8px 0;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--ink-dim);
+    background: var(--panel-raised);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .mode-btn:focus-visible { outline: 1px solid var(--led-amber); }
+  .mode-btn.active {
+    color: #1a1408;
+    background: var(--led-amber);
+    border-color: var(--led-amber);
+    font-weight: 700;
+  }
+  .mode-hint {
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-dim);
+  }
+
+  /* octave + velocity steppers */
+  .row { display: flex; gap: 12px; }
+  .stepper { flex: 1; }
+  .stepper-body {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--panel-raised);
+    overflow: hidden;
+  }
+  .step-btn {
+    width: 30px;
+    padding: 6px 0;
+    background: none;
+    border: none;
+    color: var(--ink-dim);
+    font-family: var(--mono);
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .step-btn:hover { color: var(--ink); }
+  .step-val {
+    flex: 1;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 15px;
+    color: var(--led-amber);
+  }
+
+  /* ----------------------------------------------------------- log */
+  .log-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-bottom: none;
+  }
+  #log {
+    flex: 1;
+    overflow-y: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--ink-dim);
+  }
+  #log .ev-chord { color: var(--led-amber); }
+  #log .ev-noteon, #log .ev-drum { color: var(--ink); }
+  #log .ev-system { color: var(--ink-dim); font-style: italic; }
+  #log:empty::before {
+    content: "Waiting for input — switch on and play.";
+    color: var(--led-off);
+  }
+
+  /* ---------------------------------------------------------- footer */
+  footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-dim);
+  }
+  .port { display: flex; align-items: center; gap: 6px; }
+  .port-led {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--led-off);
+  }
+  .port-led.open { background: #5dd97a; box-shadow: 0 0 6px rgba(93,217,122,0.4); }
+  #quit {
+    background: none; border: none; cursor: pointer;
+    color: var(--ink-dim);
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+  }
+  #quit:hover { color: var(--ink); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">KEY<span class="dim">MIDI</span></div>
+  <div class="power" id="power" role="switch" aria-checked="false" tabindex="0" aria-label="KeyMIDI on/off (F9)">
+    <div class="power-led"></div>
+    <div class="power-track"><div class="power-thumb"></div></div>
+  </div>
+</header>
+
+<section>
+  <div class="label">Mode</div>
+  <div class="modes" id="modes">
+    <button class="mode-btn" data-mode="piano">PIANO·F6</button>
+    <button class="mode-btn" data-mode="chords">CHORD·F7</button>
+    <button class="mode-btn" data-mode="drums">DRUM·F8</button>
+  </div>
+  <div class="mode-hint" id="modeHint"></div>
+</section>
+
+<section>
+  <div class="row">
+    <div class="stepper">
+      <div class="label">Octave · Z / X</div>
+      <div class="stepper-body">
+        <button class="step-btn" id="octDown" aria-label="Octave down">−</button>
+        <div class="step-val" id="octVal">4</div>
+        <button class="step-btn" id="octUp" aria-label="Octave up">+</button>
+      </div>
+    </div>
+    <div class="stepper">
+      <div class="label">Velocity · − / =</div>
+      <div class="stepper-body">
+        <button class="step-btn" id="velDown" aria-label="Velocity down">−</button>
+        <div class="step-val" id="velVal">100</div>
+        <button class="step-btn" id="velUp" aria-label="Velocity up">+</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="log-section">
+  <div class="label">Signal</div>
+  <div id="log"></div>
+</section>
+
+<footer>
+  <div class="port">
+    <div class="port-led" id="portLed"></div>
+    <span id="portName">KeyMIDI</span>
+  </div>
+  <button id="quit">QUIT</button>
+</footer>
+
+<script>
+  const api = window.keymidi;
+  let state = { enabled: false, mode: 'chords', octave: 4, velocity: 100, portOpen: false, portName: 'KeyMIDI' };
+
+  const HINTS = {
+    piano:  'A–; play notes, top row = sharps',
+    chords: 'Hold A–G, tap 1–0 for quality, ; = sharp',
+    drums:  'K kick · S snare · H/O hats · C clap · X crash',
+  };
+
+  function render() {
+    document.body.classList.toggle('on', state.enabled);
+    document.getElementById('power').setAttribute('aria-checked', String(state.enabled));
+    document.querySelectorAll('.mode-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.mode === state.mode);
+    });
+    document.getElementById('modeHint').textContent = HINTS[state.mode] || '';
+    document.getElementById('octVal').textContent = state.octave;
+    document.getElementById('velVal').textContent = state.velocity;
+    document.getElementById('portLed').classList.toggle('open', state.portOpen);
+    document.getElementById('portName').textContent = state.portOpen
+      ? state.portName + ' · OPEN'
+      : state.portName + ' · CLOSED';
+  }
+
+  // ----- controls → main process
+  const power = document.getElementById('power');
+  const togglePower = () => api.setEnabled(!state.enabled);
+  power.addEventListener('click', togglePower);
+  power.addEventListener('keydown', (e) => {
+    if (e.key === ' ' || e.key === 'Enter') togglePower();
+  });
+
+  document.getElementById('modes').addEventListener('click', (e) => {
+    const btn = e.target.closest('.mode-btn');
+    if (btn) api.setMode(btn.dataset.mode);
+  });
+
+  document.getElementById('octDown').addEventListener('click', () => api.setOctave(state.octave - 1));
+  document.getElementById('octUp').addEventListener('click', () => api.setOctave(state.octave + 1));
+  document.getElementById('velDown').addEventListener('click', () => api.setVelocity(state.velocity - 10));
+  document.getElementById('velUp').addEventListener('click', () => api.setVelocity(state.velocity + 10));
+  document.getElementById('quit').addEventListener('click', () => api.quit());
+
+  // ----- main process → UI
+  api.onState((s) => { state = s; render(); });
+
+  const log = document.getElementById('log');
+  const MAX_LINES = 60;
+  api.onEvent((ev) => {
+    const line = document.createElement('div');
+    line.className = 'ev-' + ev.kind;
+    line.textContent = ev.label;
+    log.appendChild(line);
+    while (log.childNodes.length > MAX_LINES) log.removeChild(log.firstChild);
+    log.scrollTop = log.scrollHeight;
+  });
+
+  api.getState().then((s) => { state = s; render(); });
+</script>
+</body>
+</html>

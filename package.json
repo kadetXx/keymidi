@@ -1,0 +1,25 @@
+{
+  "name": "keymidi",
+  "version": "0.1.0",
+  "description": "macOS menu bar app that turns your computer keyboard into a context-aware MIDI controller (real-time chord grammar + mnemonic drums).",
+  "main": "dist/main.js",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && electron .",
+    "cli": "npm run build && node dist/cli.js",
+    "rebuild:electron": "electron-rebuild",
+    "rebuild:node": "npm rebuild"
+  },
+  "dependencies": {
+    "easymidi": "^3.1.0",
+    "menubar": "^9.5.1",
+    "uiohook-napi": "^1.5.4"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.6.0",
+    "@types/node": "^20.11.0",
+    "electron": "^41.7.1",
+    "typescript": "^5.4.0"
+  }
+}
