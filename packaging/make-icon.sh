@@ -4,10 +4,12 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-# 1. SVG -> 1024px master PNG via Quick Look
-rm -f icon.svg.png icon-1024.png
-qlmanage -t -s 1024 -o . icon.svg >/dev/null 2>&1
-mv icon.svg.png icon-1024.png
+# 1. SVG -> 1024px master PNG.
+# Use rsvg-convert, NOT qlmanage: qlmanage composites onto opaque white, which
+# bakes a white square behind the transparent rounded corners. rsvg-convert
+# preserves the alpha channel. (brew install librsvg)
+rm -f icon-1024.png
+rsvg-convert -w 1024 -h 1024 icon.svg -o icon-1024.png
 
 # 2. master PNG -> .iconset (all the sizes macOS wants)
 ICONSET=icon.iconset

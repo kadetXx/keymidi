@@ -1,33 +1,16 @@
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
   <!--
     KeyMIDI app icon — the "lil" tray glyph (two tall bars flanking a shorter
-    dotted "i") on the app's charcoal faceplate, amber LED accent on the i.
-    Source for icon.icns; see packaging/make-icon.sh for the regen commands.
+    dotted "i") on the app's charcoal faceplate. Monochrome: all three bars
+    share the off-white silkscreen tone, no accent. Corners are transparent.
+    Render with rsvg-convert (qlmanage bakes a white background). See
+    packaging/make-icon.sh.
   -->
-  <defs>
-    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1e2127"/>
-      <stop offset="1" stop-color="#121418"/>
-    </linearGradient>
-    <linearGradient id="amber" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffc370"/>
-      <stop offset="1" stop-color="#f59f2d"/>
-    </linearGradient>
-  </defs>
-
-  <!-- rounded-square plate (inset like native macOS icons) -->
-  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#plate)"/>
-  <rect x="100" y="100" width="824" height="824" rx="185" fill="none"
-        stroke="#2a2e36" stroke-width="6"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#1c1f24"/>
 
   <!-- glyph: l  i(dotted)  l  — the i sits in the middle -->
-  <g>
-    <!-- left l -->
-    <rect x="316" y="326" width="104" height="372" rx="18" fill="#e8e6df"/>
-    <!-- middle i: dot + shorter body, amber accent -->
-    <circle cx="512" cy="360" r="42" fill="url(#amber)"/>
-    <rect x="460" y="430" width="104" height="268" rx="18" fill="url(#amber)"/>
-    <!-- right l -->
-    <rect x="604" y="326" width="104" height="372" rx="18" fill="#e8e6df"/>
-  </g>
+  <rect x="316" y="326" width="104" height="372" rx="18" fill="#E8E6DF"/>
+  <circle cx="512" cy="360" r="42" fill="#E8E6DF"/>
+  <rect x="460" y="430" width="104" height="268" rx="18" fill="#E8E6DF"/>
+  <rect x="604" y="326" width="104" height="372" rx="18" fill="#E8E6DF"/>
 </svg>
