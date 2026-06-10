@@ -8,7 +8,7 @@ import {
   midiToName,
 } from './chords';
 import { DRUM_MAP } from './drums';
-import { PIANO_OFFSETS, pianoToMidi } from './piano';
+import { PIANO_NOTES, pianoToMidi } from './piano';
 import { EngineState, EngineEvent, Mode } from './types';
 
 const MELODIC_CHANNEL = 0; // MIDI channel 1
@@ -72,9 +72,9 @@ export class Resolver {
   // ------------------------------------------------------------------ piano
 
   private pianoDown(key: string): void {
-    if (!(key in PIANO_OFFSETS)) return;
+    if (!(key in PIANO_NOTES)) return;
     if (this.activePiano.has(key)) return;
-    const note = pianoToMidi(key, this.state.octave);
+    const note = pianoToMidi(key, this.state.octave, this.heldAccidental());
     if (note < 0 || note > 127) return;
     this.midi.noteOn(note, this.state.velocity, MELODIC_CHANNEL);
     this.activePiano.set(key, note);
@@ -94,8 +94,7 @@ export class Resolver {
     // Root letter pressed → sound the root immediately
     if (key in ROOT_PITCH_CLASS) {
       if (this.heldRoots.has(key)) return;
-      const accidental =
-        (this.isKeyHeld(SHARP_KEY) ? 1 : 0) + (this.isKeyHeld(FLAT_KEY) ? -1 : 0);
+      const accidental = this.heldAccidental();
       const acc = accidental > 0 ? '#' : accidental < 0 ? 'b' : '';
       const rootNote = rootToMidi(key, this.state.octave, accidental);
       if (rootNote < 0 || rootNote > 127) return;
@@ -168,6 +167,11 @@ export class Resolver {
   }
 
   // -------------------------------------------------------------- controls
+
+  /** Accidental from the held modifier keys: +1 sharp, -1 flat, 0 none. */
+  private heldAccidental(): number {
+    return (this.isKeyHeld(SHARP_KEY) ? 1 : 0) + (this.isKeyHeld(FLAT_KEY) ? -1 : 0);
+  }
 
   private shiftOctave(delta: number): void {
     const next = this.state.octave + delta;

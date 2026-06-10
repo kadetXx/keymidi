@@ -102,6 +102,24 @@
     margin-bottom: 8px;
   }
 
+  /* keycap chips — make key symbols read as keys, not punctuation */
+  kbd {
+    display: inline-block;
+    min-width: 15px;
+    padding: 2px 3px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 9px;
+    line-height: 1;
+    color: var(--ink);
+    background: var(--panel-raised);
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 3px;
+  }
+  .label kbd { margin-left: 3px; }
+  .label kbd + kbd { margin-left: 2px; }
+
   /* mode selector — three flush hardware buttons */
   .modes { display: flex; gap: 6px; }
   .mode-btn {
@@ -128,7 +146,9 @@
     margin-top: 6px;
     font-family: var(--mono);
     font-size: 10px;
+    line-height: 1.5;
     color: var(--ink-dim);
+    white-space: pre-line; /* honour \n in the hint strings */
   }
 
   /* octave + velocity steppers */
@@ -237,7 +257,7 @@
 <section>
   <div class="row">
     <div class="stepper">
-      <div class="label">Octave · , / .</div>
+      <div class="label">Octave<kbd>,</kbd><kbd>.</kbd></div>
       <div class="stepper-body">
         <button class="step-btn" id="octDown" aria-label="Octave down">−</button>
         <div class="step-val" id="octVal">4</div>
@@ -245,7 +265,7 @@
       </div>
     </div>
     <div class="stepper">
-      <div class="label">Velocity · − / =</div>
+      <div class="label">Velocity<kbd>-</kbd><kbd>=</kbd></div>
       <div class="stepper-body">
         <button class="step-btn" id="velDown" aria-label="Velocity down">−</button>
         <div class="step-val" id="velVal">100</div>
@@ -273,8 +293,8 @@
   let state = { enabled: false, mode: 'chords', octave: 4, velocity: 100, portOpen: false, portName: 'KeyMIDI' };
 
   const HINTS = {
-    piano:  'Play notes on A–; · sharps on the row above',
-    chords: 'Hold a root A–G · tap 1–0 for chord type · hold ] for sharp, [ for flat',
+    piano:  'Play notes A–G · hold ] for sharp, [ for flat',
+    chords: 'Hold a root A–G · tap 1–0 for chord type\nhold ] for sharp, [ for flat',
     drums:  'K kick · S snare · H/O hats · C clap · X crash',
   };
 

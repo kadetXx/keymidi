@@ -4,12 +4,73 @@
   "description": "macOS menu bar app that turns your computer keyboard into a context-aware MIDI controller (real-time chord grammar + mnemonic drums).",
   "main": "dist/main.js",
   "private": true,
+  "license": "MIT",
+  "author": {
+    "name": "Kadet",
+    "email": "hello@kadet.dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kadetXx/keymidi.git"
+  },
   "scripts": {
     "build": "tsc",
     "start": "npm run build && electron .",
     "cli": "npm run build && node dist/cli.js",
     "rebuild:electron": "electron-rebuild",
-    "rebuild:node": "npm rebuild"
+    "rebuild:node": "npm rebuild",
+    "dist": "npm run build && electron-builder --mac",
+    "dist:publish": "npm run build && electron-builder --mac --publish always"
+  },
+  "build": {
+    "appId": "com.kadetxx.keymidi",
+    "productName": "KeyMIDI",
+    "directories": {
+      "output": "release",
+      "buildResources": "packaging"
+    },
+    "files": [
+      "dist/**/*",
+      "ui/**/*",
+      "assets/**/*",
+      "!**/*.map"
+    ],
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "mac": {
+      "category": "public.app-category.music",
+      "icon": "packaging/icon.icns",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "packaging/entitlements.mac.plist",
+      "entitlementsInherit": "packaging/entitlements.mac.plist",
+      "extendInfo": {
+        "LSUIElement": true
+      }
+    },
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "publish": {
+      "provider": "github",
+      "owner": "kadetXx",
+      "repo": "keymidi"
+    }
   },
   "dependencies": {
     "easymidi": "^3.1.0",
@@ -20,6 +81,7 @@
     "@electron/rebuild": "^3.6.0",
     "@types/node": "^20.11.0",
     "electron": "^41.7.1",
+    "electron-builder": "^26.15.2",
     "typescript": "^5.4.0"
   }
 }

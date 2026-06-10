@@ -1,0 +1,37 @@
+name: Release
+
+# Cut a release by pushing a version tag:
+#   npm version patch && git push --follow-tags
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest # Apple Silicon (arm64)
+          - os: macos-13     # Intel (x64)
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write # create the GitHub Release + upload artifacts
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and publish
+        # electron-builder rebuilds the native modules (uiohook-napi, easymidi)
+        # against Electron's ABI on its own, then uploads to the release for
+        # this tag. Each runner contributes its native arch.
+        run: npm run dist:publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

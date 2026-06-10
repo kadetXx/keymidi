@@ -12,34 +12,35 @@ What makes it different from Easy MIDI / MidiKeys / Ableton's built-in keyboard:
 
 ---
 
-## Requirements
-
-- macOS (Apple Silicon or Intel)
-- Node.js 18+ and npm (`brew install node` if you don't have it)
-- Xcode Command Line Tools — needed to compile the two native modules:
-  ```
-  xcode-select --install
-  ```
-
 ## Install
 
+macOS only for now (Apple Silicon or Intel).
+
+### Homebrew
+
 ```bash
-cd keymidi
-npm install
-npm run rebuild:electron   # rebuilds native modules against Electron's ABI
-npm start
+brew install --cask --no-quarantine kadetXx/tap/keymidi
 ```
 
-`npm start` compiles the TypeScript and launches the app. You'll see the
-KeyMIDI icon appear in your menu bar.
+The `--no-quarantine` flag is needed because early releases aren't yet
+signed/notarized with Apple — without it, macOS will refuse to open the app.
+Once notarized releases ship, the flag won't be necessary.
+
+### Direct download
+
+Grab the `.dmg` for your Mac (arm64 = Apple Silicon, x64 = Intel) from
+[Releases](https://github.com/kadetXx/keymidi/releases), drag KeyMIDI to
+Applications. Until releases are notarized, macOS will block the first launch —
+go to **System Settings → Privacy & Security**, scroll down, and click
+**Open Anyway**.
 
 ### First-run: Accessibility permission (this WILL bite you once)
 
 The global keyboard hook needs the macOS Accessibility permission. On first
 launch, macOS either prompts you or the hook silently does nothing. Go to:
 
-**System Settings → Privacy & Security → Accessibility** → enable **Electron**
-(or **KeyMIDI** if you've packaged it).
+**System Settings → Privacy & Security → Accessibility** → enable **KeyMIDI**
+(or **Electron** if you're running from source).
 
 If you granted it and keys still don't register, remove the entry, re-add it,
 and relaunch — macOS caches this per-binary and gets confused after rebuilds.
@@ -61,22 +62,22 @@ The popover (click the menu bar icon) has the on/off switch, mode buttons,
 octave/velocity steppers, a live signal log, and Quit. Everything also has a
 global hotkey so you never have to leave Ableton:
 
-| Key | Action |
-|---|---|
-| **F9** | KeyMIDI on/off |
-| **F6 / F7 / F8** | Piano / Chord / Drum mode |
-| **, / .** | Octave down / up |
-| **− / =** | Velocity down / up (steps of 10) |
-| **[ / ]** | Flat / sharp modifier (chord mode, hold with a root) |
+| Key              | Action                                               |
+| ---------------- | ---------------------------------------------------- |
+| **F9**           | KeyMIDI on/off                                       |
+| **F6 / F7 / F8** | Piano / Chord / Drum mode                            |
+| **, / .**        | Octave down / up                                     |
+| **− / =**        | Velocity down / up (steps of 10)                     |
+| **[ / ]**        | Flat / sharp modifier (chord & piano mode)           |
 
 ### Chord mode (the whole point)
 
 - Hold a root letter **A–G** → the root note sounds immediately.
 - While holding it, tap a digit → the root becomes the full chord:
 
-| Digit | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Quality | maj | min | dim | aug | sus4 | 6 | **dom7** | maj7 | min7 | sus2 |
+| Digit   | 1   | 2   | 3   | 4   | 5    | 6   | 7        | 8    | 9    | 0    |
+| ------- | --- | --- | --- | --- | ---- | --- | -------- | ---- | ---- | ---- |
+| Quality | maj | min | dim | aug | sus4 | 6   | **dom7** | maj7 | min7 | sus2 |
 
 - Hold **]** while pressing the root to sharpen it (`]` + `G` = G#).
 - Hold **[** while pressing the root to flatten it (`[` + `G` = Gb).
@@ -89,16 +90,17 @@ chord, play it.
 
 ### Drum mode (channel 10, General MIDI)
 
-| Key | K | S | H | O | C | R | X | T | Y | U | M | N |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Key   | K    | S     | H          | O        | C    | R    | X     | T       | Y       | U        | M       | N      |
+| ----- | ---- | ----- | ---------- | -------- | ---- | ---- | ----- | ------- | ------- | -------- | ------- | ------ |
 | Sound | Kick | Snare | Closed Hat | Open Hat | Clap | Ride | Crash | Low Tom | Mid Tom | High Tom | Rimshot | Shaker |
 
 Drop Ableton's Drum Rack on the track and the GM notes land on sensible pads.
 
 ### Piano mode
 
-Ableton-style single row: `A W S E D F T G Y H U J K O L P ;` =
-C C# D D# E F F# G G# A A# B C C# D D# E.
+Single notes by letter name — same model as chord mode, minus the qualities.
+Press **C D E F G A B** to play those natural notes; hold **]** for sharp or
+**[** for flat (`]`+`C` = C#, `[`+`B` = Bb); shift range with the octave keys.
 
 ---
 
@@ -114,6 +116,27 @@ letters you play, they'll fire. Two mitigations:
 
 This is a macOS architecture constraint (true key suppression needs a CGEventTap
 that consumes events — a possible v2 via a small native module).
+
+## Running from source
+
+- Node.js 18+ (22.12+ if you want to package the DMG) and npm
+- Xcode Command Line Tools — needed to compile the two native modules:
+  `xcode-select --install`
+
+```bash
+git clone https://github.com/kadetXx/keymidi.git && cd keymidi
+npm install
+npm run rebuild:electron   # rebuilds native modules against Electron's ABI
+npm start                  # compiles TypeScript and launches the app
+```
+
+To package a distributable DMG locally: `npm run dist` (output in `release/`).
+Releases are normally cut by CI instead — push a version tag and GitHub Actions
+builds both architectures and publishes them:
+
+```bash
+npm version patch && git push --follow-tags
+```
 
 ## CLI debug mode
 
@@ -150,12 +173,17 @@ src/engine/listener.ts Global keyboard hook (uiohook-napi)
 src/engine/resolver.ts Key events → MIDI notes, per-root tracking
 src/engine/chords.ts   Chord grammar (roots, qualities, sharp/flat keys)
 src/engine/drums.ts    Mnemonic GM drum map
-src/engine/piano.ts    Ableton-style row layout
+src/engine/piano.ts    Piano mode: single notes by letter name
 src/engine/midi.ts     Virtual MIDI port (easymidi)
 ui/index.html          The popover
+packaging/             electron-builder entitlements + Homebrew cask template
 ```
 
 All MIDI-critical code runs in the Electron main process; the popover is
 display-only, so the UI adds zero latency to the keyboard → MIDI path.
 Expected total latency: ~5–15 ms (hook → engine → CoreMIDI → Ableton).
 If it feels slow, lower Ableton's audio buffer to 64–128 samples.
+
+## License
+
+[MIT](LICENSE) © Collins Enebeli
