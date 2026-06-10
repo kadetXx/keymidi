@@ -27,10 +27,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and publish (arm64 + x64)
-        # mac.target in package.json lists both arches, so `electron-builder
-        # --mac` produces arm64 + x64 dmg/zip and uploads them to the draft
-        # release for this tag.
-        run: npm run dist:publish
+      - name: Build (arm64 + x64)
+        # mac.target in package.json lists both arches, so this produces
+        # arm64 + x64 dmg/zip in release/. --publish never: we upload
+        # ourselves below so we control overwrite behaviour.
+        run: npm run build && npx electron-builder --mac --arm64 --x64 --publish never
+
+      - name: Publish to release (overwrite existing assets)
+        # electron-builder's own publisher SKIPS assets that already exist on
+        # the draft, so re-runs silently serve a stale build. `gh release
+        # upload --clobber` always replaces them. Create the draft if absent.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create "$tag" --repo "$GITHUB_REPOSITORY" --draft --title "$tag" --notes "Automated build for $tag."
+          gh release upload "$tag" --repo "$GITHUB_REPOSITORY" --clobber \
+            release/*.dmg release/*.zip
