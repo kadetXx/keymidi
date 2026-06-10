@@ -1,16 +1,14 @@
 # KeyMIDI
 
-A macOS menu bar app that turns your computer keyboard into a context-aware MIDI
-controller for Ableton Live (or any DAW). Lives in the title bar — click the icon
-to open the controls, flip the switch to turn it on/off.
+A macOS menu bar app that turns your computer keyboard into a stupefied MIDI
+controller for Ableton Live (or any DAW). It lives in the title bar; click the icon
+to open the control panel, flip the switch to turn it on/off.
 
 What makes it different from Easy MIDI / MidiKeys / Ableton's built-in keyboard:
 
-- **Real-time chord grammar** — hold `G`, tap `7`, hear a Gdom7. No presets.
-- **Mnemonic drums** — `K` = Kick, `S` = Snare, `H` = Hat. No grid to memorize.
-- **Global keyboard hook** — works while Ableton is focused/fullscreen.
-
----
+- **Mnemonic drums**: `K` = Kick, `S` = Snare, `H` = Hat. No grid to memorize.
+- **Real-time chord grammar**: hold `G`, tap `1`, hear a Gmaj7. No presets.
+- **Global keyboard hook**: works while Ableton is focused/fullscreen/unfocused/it just works.
 
 ## Install
 
@@ -34,9 +32,9 @@ Applications. Until releases are notarized, macOS will block the first launch �
 go to **System Settings → Privacy & Security**, scroll down, and click
 **Open Anyway**.
 
-### First-run: Accessibility permission (this WILL bite you once)
+## Accessibility permission (one-time)
 
-The global keyboard hook needs the macOS Accessibility permission. On first
+You'll only need to do this **ONCE**. The global keyboard hook needs the macOS Accessibility permission. On first
 launch, macOS either prompts you or the hook silently does nothing. Go to:
 
 **System Settings → Privacy & Security → Accessibility** → enable **KeyMIDI**
@@ -45,7 +43,8 @@ launch, macOS either prompts you or the hook silently does nothing. Go to:
 If you granted it and keys still don't register, remove the entry, re-add it,
 and relaunch — macOS caches this per-binary and gets confused after rebuilds.
 
-### Ableton setup (one-time)
+
+## Ableton setup (one-time)
 
 KeyMIDI creates its own virtual MIDI source — no IAC driver needed.
 
@@ -53,8 +52,6 @@ KeyMIDI creates its own virtual MIDI source — no IAC driver needed.
 2. Ableton → Settings → Link/MIDI: you'll see **KeyMIDI** as an input.
 3. Enable **Track** (and **Remote** if you want) for the KeyMIDI input.
 4. Arm a MIDI track. Flip the switch in the KeyMIDI popover (or hit **F9**). Play.
-
----
 
 ## How to play
 
@@ -64,18 +61,24 @@ global hotkey so you never have to leave Ableton:
 
 | Key              | Action                                               |
 | ---------------- | ---------------------------------------------------- |
-| **F9**           | KeyMIDI on/off                                       |
-| **F6 / F7 / F8** | Piano / Chord / Drum mode                            |
-| **, / .**        | Octave down / up                                     |
-| **− / =**        | Velocity down / up (steps of 10)                     |
-| **[ / ]**        | Flat / sharp modifier (chord & piano mode)           |
+| **`F9`**           | KeyMIDI on/off                                       |
+| **`F6` / `F7` / `F8`** | Piano / Chord / Drum mode                            |
+| **`,` / `.`**        | Octave down / up                                     |
+| **`−` / `=`**        | Velocity down / up (steps of 10)                     |
+| **`[` / `]`**        | Flat / sharp modifier (chord & piano mode)           |
 
-### Chord mode (the whole point)
+### #Piano mode
+
+Single notes by letter name — same model as chord mode, minus the qualities.
+Press **C D E F G A B** to play those natural notes; hold **]** for sharp or
+**[** for flat (`]`+`C` = C#, `[`+`B` = Bb); shift range with the octave keys.
+
+### #Chord mode (the whole point)
 
 - Hold a root letter **A–G** → the root note sounds immediately.
 - While holding it, tap a digit → the root becomes the full chord:
 
-| Digit   | 1   | 2   | 3   | 4   | 5    | 6   | 7        | 8    | 9    | 0    |
+| Digit   | `1`   | `2`   | `3`   | `4`   | `5`    | `6`   | `7`        | `8`    | `9`    | `0`    |
 | ------- | --- | --- | --- | --- | ---- | --- | -------- | ---- | ---- | ---- |
 | Quality | maj | min | dim | aug | sus4 | 6   | **dom7** | maj7 | min7 | sus2 |
 
@@ -88,34 +91,22 @@ global hotkey so you never have to leave Ableton:
 So: `G` + `7` = Gdom7. `]`+`F` + `9` = F#min7. `[`+`B` + `1` = Bbmaj. Think a
 chord, play it.
 
-### Drum mode (channel 10, General MIDI)
+### #Drum mode (channel 10, General MIDI)
 
-| Key   | K    | S     | H          | O        | C    | R    | X     | T       | Y       | U        | M       | N      |
+| Key   | `K`    | `S`     | `H`          | `O`        | `C`    | `R`    | `X`     | `T`       | `Y`       | `U`        | `M`       | `N`      |
 | ----- | ---- | ----- | ---------- | -------- | ---- | ---- | ----- | ------- | ------- | -------- | ------- | ------ |
 | Sound | Kick | Snare | Closed Hat | Open Hat | Clap | Ride | Crash | Low Tom | Mid Tom | High Tom | Rimshot | Shaker |
 
 Drop Ableton's Drum Rack on the track and the GM notes land on sensible pads.
 
-### Piano mode
+## Current limitation
 
-Single notes by letter name — same model as chord mode, minus the qualities.
-Press **C D E F G A B** to play those natural notes; hold **]** for sharp or
-**[** for flat (`]`+`C` = C#, `[`+`B` = Bb); shift range with the octave keys.
+The hook **listens** globally but doesn't **swallow** keys so, while KeyMIDI is on,
+your keystrokes still reach the focused app. If Ableton (or any other currently focused app) has key mappings on
+letters you play, they'll also be triggered alongside. Two mitigations:
 
----
-
-## The one honest limitation
-
-The hook **listens** globally but doesn't **swallow** keys — while KeyMIDI is on,
-your keystrokes still reach the focused app. If Ableton has key mappings on
-letters you play, they'll fire. Two mitigations:
-
-1. **F9 is your friend** — toggle off the instant you need to type.
-2. Avoid mapping Ableton shortcuts onto the playing keys, or play with a
-   non-armed window focused (e.g. Finder) since the hook works regardless.
-
-This is a macOS architecture constraint (true key suppression needs a CGEventTap
-that consumes events — a possible v2 via a small native module).
+1. **F9 is your friend**: toggle off the instant you need to type.
+2. **Focus elsewhere**: move focus to keymidi's control panel or a non-armed window (e.g. Finder) since the hook works regardless.
 
 ## Running from source
 
@@ -130,9 +121,13 @@ npm run rebuild:electron   # rebuilds native modules against Electron's ABI
 npm start                  # compiles TypeScript and launches the app
 ```
 
-To package a distributable DMG locally: `npm run dist` (output in `release/`).
-Releases are normally cut by CI instead — push a version tag and GitHub Actions
-builds both architectures and publishes them:
+To package an installable DMG locally: 
+
+```bash
+npm run dist
+```
+
+To publish a new release:
 
 ```bash
 npm version patch && git push --follow-tags
@@ -140,7 +135,7 @@ npm version patch && git push --follow-tags
 
 ## CLI debug mode
 
-The whole MIDI engine runs without Electron, per the original build plan:
+The whole MIDI engine can be run without Electron:
 
 ```bash
 npm run rebuild:node   # native modules back to Node's ABI
@@ -149,6 +144,14 @@ npm run cli
 
 (Then `npm run rebuild:electron` again before `npm start` — the two ABIs are
 incompatible, this is normal Electron friction.)
+
+## Performance
+
+All MIDI-critical code runs in the Electron main process. The popover/control panel is
+display-only, so the UI adds zero latency to the keyboard → MIDI path.
+
+Expected total latency: ~5–15 ms (hook → engine → CoreMIDI → Ableton).
+If it feels slow, lower Ableton's audio buffer to 64–128 samples.
 
 ## Troubleshooting
 
@@ -161,28 +164,6 @@ incompatible, this is normal Electron friction.)
 - **App starts but `Error: Module did not self-register`** → ABI mismatch;
   run `npm run rebuild:electron`.
 - **Hanging note** → flip F9 off/on; that sends all-notes-off.
-
-## Project layout
-
-```
-src/main.ts            Electron main: tray, popover, IPC
-src/preload.ts         Safe bridge between popover and engine
-src/cli.ts             Terminal debug mode
-src/engine/engine.ts   Facade: hotkeys, state, wiring
-src/engine/listener.ts Global keyboard hook (uiohook-napi)
-src/engine/resolver.ts Key events → MIDI notes, per-root tracking
-src/engine/chords.ts   Chord grammar (roots, qualities, sharp/flat keys)
-src/engine/drums.ts    Mnemonic GM drum map
-src/engine/piano.ts    Piano mode: single notes by letter name
-src/engine/midi.ts     Virtual MIDI port (easymidi)
-ui/index.html          The popover
-packaging/             electron-builder entitlements + Homebrew cask template
-```
-
-All MIDI-critical code runs in the Electron main process; the popover is
-display-only, so the UI adds zero latency to the keyboard → MIDI path.
-Expected total latency: ~5–15 ms (hook → engine → CoreMIDI → Ableton).
-If it feels slow, lower Ableton's audio buffer to 64–128 samples.
 
 ## License
 
