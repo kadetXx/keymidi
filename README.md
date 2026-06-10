@@ -16,12 +16,15 @@ macOS only for now (Apple Silicon or Intel).
 ### Homebrew
 
 ```bash
-brew install --cask --no-quarantine kadetXx/tap/keymidi
+brew install --cask kadetXx/tap/keymidi
+xattr -dr com.apple.quarantine /Applications/KeyMIDI.app
 ```
 
-The `--no-quarantine` flag is needed because early releases aren't yet
-signed/notarized with apple. Without it, macOS will refuse to open the app.
-Once notarized releases ship, the flag won't be necessary.
+The second line clears the quarantine flag — early releases aren't yet
+signed/notarized with Apple, so macOS blocks the app otherwise. (You can skip
+it and instead approve the app under **System Settings → Privacy & Security →
+Open Anyway** on first launch.) Once notarized releases ship, neither step is
+needed.
 
 ### Direct download
 
