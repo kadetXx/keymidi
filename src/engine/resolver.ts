@@ -3,6 +3,7 @@ import {
   ROOT_PITCH_CLASS,
   QUALITIES,
   SHARP_KEY,
+  FLAT_KEY,
   rootToMidi,
   midiToName,
 } from './chords';
@@ -19,9 +20,9 @@ const VEL_DOWN = 'Minus';
 const VEL_UP = 'Equal';
 
 interface HeldRoot {
-  rootNote: number;     // MIDI note of the root as pressed (incl. sharp)
+  rootNote: number;     // MIDI note of the root as pressed (incl. accidental)
   letter: string;       // "G"
-  sharp: boolean;
+  acc: string;          // "#", "b", or ""
   notes: number[];      // notes currently sounding for this root
 }
 
@@ -93,16 +94,18 @@ export class Resolver {
     // Root letter pressed → sound the root immediately
     if (key in ROOT_PITCH_CLASS) {
       if (this.heldRoots.has(key)) return;
-      const sharp = this.isKeyHeld(SHARP_KEY);
-      const rootNote = rootToMidi(key, this.state.octave, sharp);
+      const accidental =
+        (this.isKeyHeld(SHARP_KEY) ? 1 : 0) + (this.isKeyHeld(FLAT_KEY) ? -1 : 0);
+      const acc = accidental > 0 ? '#' : accidental < 0 ? 'b' : '';
+      const rootNote = rootToMidi(key, this.state.octave, accidental);
       if (rootNote < 0 || rootNote > 127) return;
       this.midi.noteOn(rootNote, this.state.velocity, MELODIC_CHANNEL);
-      this.heldRoots.set(key, { rootNote, letter: key, sharp, notes: [rootNote] });
+      this.heldRoots.set(key, { rootNote, letter: key, acc, notes: [rootNote] });
       this.rootOrder.push(key);
       this.emit({
         ts: Date.now(),
         kind: 'noteon',
-        label: `${key}${sharp ? '#' : ''} root → ${midiToName(rootNote)}`,
+        label: `${key}${acc} root → ${midiToName(rootNote)}`,
       });
       return;
     }
@@ -131,7 +134,7 @@ export class Resolver {
       this.emit({
         ts: Date.now(),
         kind: 'chord',
-        label: `${root.letter}${root.sharp ? '#' : ''}${quality.name} → ${chordNotes
+        label: `${root.letter}${root.acc}${quality.name} → ${chordNotes
           .map(midiToName)
           .join(' ')}`,
       });

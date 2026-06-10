@@ -3,7 +3,8 @@
  * ------------------
  * Hold a root letter (A–G) → the root note sounds immediately.
  * While holding it, tap a quality digit → the root is replaced by the full chord.
- * Hold ';' while pressing the root to sharpen it (G + ';' = G#).
+ * Hold ']' while pressing the root to sharpen it (']' + G = G#).
+ * Hold '[' while pressing the root to flatten it ('[' + G = Gb).
  * Release the root letter → everything belonging to that root stops.
  * Multiple roots are tracked independently.
  */
@@ -19,7 +20,9 @@ export const ROOT_PITCH_CLASS: Record<string, number> = {
   B: 11,
 };
 
-export const SHARP_KEY = 'Semicolon';
+// Accidental modifiers, held while pressing a root: ']' raises, '[' lowers.
+export const SHARP_KEY = 'BracketRight';
+export const FLAT_KEY = 'BracketLeft';
 
 export interface ChordQuality {
   name: string;            // suffix shown in the log, e.g. "dom7"
@@ -49,7 +52,7 @@ export function midiToName(note: number): string {
 }
 
 /** MIDI note number for a root letter at a given octave (C4 = 60). */
-export function rootToMidi(letter: string, octave: number, sharp: boolean): number {
-  const pc = ROOT_PITCH_CLASS[letter] + (sharp ? 1 : 0);
+export function rootToMidi(letter: string, octave: number, accidental: number): number {
+  const pc = ROOT_PITCH_CLASS[letter] + accidental;
   return 12 * (octave + 1) + pc;
 }

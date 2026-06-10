@@ -67,6 +67,7 @@ global hotkey so you never have to leave Ableton:
 | **F6 / F7 / F8** | Piano / Chord / Drum mode |
 | **, / .** | Octave down / up |
 | **− / =** | Velocity down / up (steps of 10) |
+| **[ / ]** | Flat / sharp modifier (chord mode, hold with a root) |
 
 ### Chord mode (the whole point)
 
@@ -77,12 +78,14 @@ global hotkey so you never have to leave Ableton:
 |---|---|---|---|---|---|---|---|---|---|---|
 | Quality | maj | min | dim | aug | sus4 | 6 | **dom7** | maj7 | min7 | sus2 |
 
-- Hold **;** while pressing the root to sharpen it (`;` + `G` = G#).
+- Hold **]** while pressing the root to sharpen it (`]` + `G` = G#).
+- Hold **[** while pressing the root to flatten it (`[` + `G` = Gb).
 - Release the root letter → everything belonging to it stops.
 - Multiple roots track independently — hold `C` and `G`, give each a quality,
   release them separately. The digit applies to the most recently pressed root.
 
-So: `G` + `7` = Gdom7. `;`+`F` + `9` = F#min7. Think a chord, play it.
+So: `G` + `7` = Gdom7. `]`+`F` + `9` = F#min7. `[`+`B` + `1` = Bbmaj. Think a
+chord, play it.
 
 ### Drum mode (channel 10, General MIDI)
 
@@ -145,7 +148,7 @@ src/cli.ts             Terminal debug mode
 src/engine/engine.ts   Facade: hotkeys, state, wiring
 src/engine/listener.ts Global keyboard hook (uiohook-napi)
 src/engine/resolver.ts Key events → MIDI notes, per-root tracking
-src/engine/chords.ts   Chord grammar (roots, qualities, sharp key)
+src/engine/chords.ts   Chord grammar (roots, qualities, sharp/flat keys)
 src/engine/drums.ts    Mnemonic GM drum map
 src/engine/piano.ts    Ableton-style row layout
 src/engine/midi.ts     Virtual MIDI port (easymidi)
