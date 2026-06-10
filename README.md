@@ -65,7 +65,7 @@ global hotkey so you never have to leave Ableton:
 |---|---|
 | **F9** | KeyMIDI on/off |
 | **F6 / F7 / F8** | Piano / Chord / Drum mode |
-| **Z / X** | Octave down / up |
+| **, / .** | Octave down / up |
 | **− / =** | Velocity down / up (steps of 10) |
 
 ### Chord mode (the whole point)

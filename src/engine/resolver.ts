@@ -13,8 +13,8 @@ import { EngineState, EngineEvent, Mode } from './types';
 const MELODIC_CHANNEL = 0; // MIDI channel 1
 const DRUM_CHANNEL = 9;    // MIDI channel 10 (GM drums)
 
-const OCTAVE_DOWN = 'Z';
-const OCTAVE_UP = 'X';
+const OCTAVE_DOWN = 'Comma';
+const OCTAVE_UP = 'Period';
 const VEL_DOWN = 'Minus';
 const VEL_UP = 'Equal';
 
