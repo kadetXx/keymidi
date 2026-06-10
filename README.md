@@ -1,8 +1,7 @@
 # KeyMIDI
 
-A macOS menu bar app that turns your computer keyboard into a stupefied MIDI
-controller for Ableton Live (or any DAW). It lives in the title bar; click the icon
-to open the control panel, flip the switch to turn it on/off.
+A macOS menu bar app that lives in the title bar and turns your computer keyboard into a stupefied MIDI
+controller for Ableton/DAWs.
 
 What makes it different from Easy MIDI / MidiKeys / Ableton's built-in keyboard:
 
@@ -21,14 +20,14 @@ brew install --cask --no-quarantine kadetXx/tap/keymidi
 ```
 
 The `--no-quarantine` flag is needed because early releases aren't yet
-signed/notarized with Apple — without it, macOS will refuse to open the app.
+signed/notarized with apple. Without it, macOS will refuse to open the app.
 Once notarized releases ship, the flag won't be necessary.
 
 ### Direct download
 
 Grab the `.dmg` for your Mac (arm64 = Apple Silicon, x64 = Intel) from
 [Releases](https://github.com/kadetXx/keymidi/releases), drag KeyMIDI to
-Applications. Until releases are notarized, macOS will block the first launch —
+Applications. Until releases are notarized, macOS will block the first launch;
 go to **System Settings → Privacy & Security**, scroll down, and click
 **Open Anyway**.
 
