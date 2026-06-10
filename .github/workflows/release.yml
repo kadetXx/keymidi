@@ -9,12 +9,11 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        include:
-          - os: macos-latest # Apple Silicon (arm64)
-          - os: macos-13     # Intel (x64)
-    runs-on: ${{ matrix.os }}
+    # A single Apple Silicon runner builds BOTH architectures. electron-builder
+    # cross-packages the x64 app from here (the native modules ship prebuilt
+    # darwin-x64 binaries), so we don't depend on GitHub's scarce macos-13
+    # Intel runners, which can sit queued for 30+ minutes.
+    runs-on: macos-latest
     permissions:
       contents: write # create the GitHub Release + upload artifacts
     steps:
@@ -22,16 +21,16 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and publish
-        # electron-builder rebuilds the native modules (uiohook-napi, easymidi)
-        # against Electron's ABI on its own, then uploads to the release for
-        # this tag. Each runner contributes its native arch.
+      - name: Build and publish (arm64 + x64)
+        # mac.target in package.json lists both arches, so `electron-builder
+        # --mac` produces arm64 + x64 dmg/zip and uploads them to the draft
+        # release for this tag.
         run: npm run dist:publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
