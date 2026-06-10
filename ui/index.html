@@ -20,8 +20,8 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    width: 320px;
-    height: 480px;
+    width: 100vw;
+    height: 100vh;
     background: var(--panel);
     color: var(--ink);
     font-family: var(--sans);
@@ -55,6 +55,14 @@
     align-items: center;
     gap: 8px;
     cursor: pointer;
+  }
+  /* The popover auto-focuses the switch on open; only show a ring for real
+     keyboard focus, not that programmatic/mouse focus. */
+  .power:focus { outline: none; }
+  .power:focus-visible {
+    outline: 1px solid var(--led-amber);
+    outline-offset: 3px;
+    border-radius: 4px;
   }
   .power-led {
     width: 8px;
@@ -146,10 +154,11 @@
     margin-top: 6px;
     font-family: var(--mono);
     font-size: 10px;
-    line-height: 1.5;
+    line-height: 1.7;
     color: var(--ink-dim);
-    white-space: pre-line; /* honour \n in the hint strings */
+    white-space: nowrap; /* hints are tuned to fit one line */
   }
+  .mode-hint kbd { margin: 0 1px; min-width: 12px; padding: 2px 2px; }
 
   /* octave + velocity steppers */
   .row { display: flex; gap: 12px; }
@@ -293,9 +302,9 @@
   let state = { enabled: false, mode: 'chords', octave: 4, velocity: 100, portOpen: false, portName: 'KeyMIDI' };
 
   const HINTS = {
-    piano:  'Play notes A–G · hold ] for sharp, [ for flat',
-    chords: 'Hold a root A–G · tap 1–0 for chord type\nhold ] for sharp, [ for flat',
-    drums:  'K kick · S snare · H/O hats · C clap · X crash',
+    piano:  'Play <kbd>A</kbd>–<kbd>G</kbd> · <kbd>]</kbd> sharp · <kbd>[</kbd> flat',
+    chords: 'Play <kbd>A</kbd>–<kbd>G</kbd> · <kbd>1</kbd>–<kbd>0</kbd> for chord type · <kbd>]</kbd> sharp · <kbd>[</kbd> flat',
+    drums:  '<kbd>K</kbd> kick · <kbd>S</kbd> snare · <kbd>H</kbd>/<kbd>O</kbd> hats · <kbd>C</kbd> clap · <kbd>X</kbd> crash',
   };
 
   function render() {
@@ -304,7 +313,7 @@
     document.querySelectorAll('.mode-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.mode === state.mode);
     });
-    document.getElementById('modeHint').textContent = HINTS[state.mode] || '';
+    document.getElementById('modeHint').innerHTML = HINTS[state.mode] || '';
     document.getElementById('octVal').textContent = state.octave;
     document.getElementById('velVal').textContent = state.velocity;
     document.getElementById('portLed').classList.toggle('open', state.portOpen);

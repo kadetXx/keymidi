@@ -74,11 +74,15 @@ export class Resolver {
   private pianoDown(key: string): void {
     if (!(key in PIANO_NOTES)) return;
     if (this.activePiano.has(key)) return;
-    const note = pianoToMidi(key, this.state.octave, this.heldAccidental());
+    const accidental = this.heldAccidental();
+    const note = pianoToMidi(key, this.state.octave, accidental);
     if (note < 0 || note > 127) return;
     this.midi.noteOn(note, this.state.velocity, MELODIC_CHANNEL);
     this.activePiano.set(key, note);
-    this.emit({ ts: Date.now(), kind: 'noteon', label: midiToName(note) });
+    // Spell it the way it was played: 'b' when flat is held, not the
+    // enharmonic sharp midiToName() would pick (B♭, not A♯).
+    const acc = accidental > 0 ? '#' : accidental < 0 ? 'b' : '';
+    this.emit({ ts: Date.now(), kind: 'noteon', label: `${key}${acc}${this.state.octave}` });
   }
 
   private pianoUp(key: string): void {

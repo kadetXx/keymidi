@@ -15,7 +15,7 @@ const mb = menubar({
   index: `file://${path.join(__dirname, '..', 'ui', 'index.html')}`,
   icon: nativeImage.createFromPath(iconOn),
   browserWindow: {
-    width: 320,
+    width: 400,
     height: 480,
     resizable: false,
     webPreferences: {
