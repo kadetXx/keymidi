@@ -170,6 +170,15 @@ If it feels slow, lower Ableton's audio buffer to 64–128 samples.
 
 ## Troubleshooting
 
+- **macOS blocks the app after install** ("damaged", "can't be opened", or
+  quarantine dialog) → releases aren't signed/notarized yet. Either remove the
+  quarantine flag:
+  ```bash
+  xattr -dr com.apple.quarantine /Applications/KeyMIDI.app
+  ```
+  or try opening KeyMIDI once, then go to **System Settings → Privacy &
+  Security** and click **Open Anyway**. Once notarized builds ship, neither
+  step is needed.
 - **Ableton doesn't hear KeyMIDI** → check the popover footer first (the port
   LED should be green / "OPEN"), then Ableton → Settings → Link/MIDI: **KeyMIDI**
   should be listed as an input with **Track** enabled. enable it if not.
