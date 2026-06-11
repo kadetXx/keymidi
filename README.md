@@ -45,7 +45,6 @@ launch, macOS either prompts you or the hook silently does nothing. Go to:
 If you granted it and keys still don't register, remove the entry, re-add it,
 and relaunch — macOS caches this per-binary and gets confused after rebuilds.
 
-
 ## Ableton setup (one-time)
 
 KeyMIDI creates its own virtual MIDI source — no IAC driver needed.
@@ -61,13 +60,13 @@ The popover (click the menu bar icon) has the on/off switch, mode buttons,
 octave/velocity steppers, a live signal log, and Quit. Everything also has a
 global hotkey so you never have to leave Ableton:
 
-| Key              | Action                                               |
-| ---------------- | ---------------------------------------------------- |
-| **`F9`**           | KeyMIDI on/off                                       |
-| **`F6` / `F7` / `F8`** | Piano / Chord / Drum mode                            |
-| **`,` / `.`**        | Octave down / up                                     |
-| **`−` / `=`**        | Velocity down / up (steps of 10)                     |
-| **`[` / `]`**        | Flat / sharp modifier (chord & piano mode)           |
+| Key                    | Action                                     |
+| ---------------------- | ------------------------------------------ |
+| **`F9`**               | KeyMIDI on/off                             |
+| **`F6` / `F7` / `F8`** | Piano / Chord / Drum mode                  |
+| **`,` / `.`**          | Octave down / up                           |
+| **`−` / `=`**          | Velocity down / up (steps of 10)           |
+| **`[` / `]`**          | Flat / sharp modifier (chord & piano mode) |
 
 ### #Piano mode
 
@@ -80,7 +79,7 @@ Press **C D E F G A B** to play those natural notes; hold **]** for sharp or
 - Hold a root letter **A–G** → the root note sounds immediately.
 - While holding it, tap a digit → the root becomes the full chord:
 
-| Digit   | `1`   | `2`   | `3`   | `4`   | `5`    | `6`   | `7`        | `8`    | `9`    | `0`    |
+| Digit   | `1` | `2` | `3` | `4` | `5`  | `6` | `7`      | `8`  | `9`  | `0`  |
 | ------- | --- | --- | --- | --- | ---- | --- | -------- | ---- | ---- | ---- |
 | Quality | maj | min | dim | aug | sus4 | 6   | **dom7** | maj7 | min7 | sus2 |
 
@@ -95,11 +94,26 @@ chord, play it.
 
 ### #Drum mode (channel 10, General MIDI)
 
-| Key   | `K`    | `S`     | `H`          | `O`        | `C`    | `R`    | `X`     | `T`       | `Y`       | `U`        | `M`       | `N`      |
+| Key   | `K`  | `S`   | `H`        | `O`      | `C`  | `R`  | `X`   | `T`     | `Y`     | `U`      | `M`     | `N`    |
 | ----- | ---- | ----- | ---------- | -------- | ---- | ---- | ----- | ------- | ------- | -------- | ------- | ------ |
 | Sound | Kick | Snare | Closed Hat | Open Hat | Clap | Ride | Crash | Low Tom | Mid Tom | High Tom | Rimshot | Shaker |
 
 Drop Ableton's Drum Rack on the track and the GM notes land on sensible pads.
+
+### #Scales view (mouse-only, the landing page)
+
+The popover opens on the **Scales** view: pick a root and a scale (major,
+minor, harmonic minor, dorian, mixolydian) and the seven chords of that key
+show up as pads with roman numerals; so the classic pop progression
+`I–V–vi–IV` (the "four chords" behind half the charts) is just four taps in
+order. Tap to play, hold to sustain. No keyboard switch needed; it's all mouse, and it works
+even while keyboard capture is off. The **KEYS/SCALES** button in the footer
+flips between this and the keyboard modes.
+
+Pro combo: scales send on channel 1, drums on channel 10. Hit **`F8`** (drum
+mode) while on the Scales view and you can tap chord pads with the mouse while
+drumming `K`/`S`/`H` on the keyboard, two instruments, two Ableton tracks,
+one laptop.
 
 ## Current limitation
 
@@ -123,7 +137,7 @@ npm run rebuild:electron   # rebuilds native modules against Electron's ABI
 npm start                  # compiles TypeScript and launches the app
 ```
 
-To package an installable DMG locally: 
+To package an installable DMG locally:
 
 ```bash
 npm run dist
