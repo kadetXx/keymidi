@@ -6,7 +6,8 @@ controller for Ableton/DAWs.
 What makes it different from Easy MIDI / MidiKeys / Ableton's built-in keyboard:
 
 - **Mnemonic drums**: `K` = Kick, `S` = Snare, `H` = Hat. No grid to memorize.
-- **Real-time chord grammar**: hold `G`, tap `1`, hear a Gmaj7. No presets.
+- **Real-time chord grammar**: hold `G`, tap `1`, hear Gmaj. No presets. See the
+  [chord mode digit map](#chord-mode-the-whole-point).
 - **Global keyboard hook**: works while DAW is focused/fullscreen/unfocused/it just works.
 
 ## Install
@@ -20,7 +21,7 @@ brew install --cask kadetXx/tap/keymidi
 xattr -dr com.apple.quarantine /Applications/KeyMIDI.app
 ```
 
-The second line clears the quarantine flag — early releases aren't yet
+The second line clears the quarantine flag: early releases aren't yet
 signed/notarized with Apple, so macOS blocks the app otherwise. (You can skip
 it and instead approve the app under **System Settings → Privacy & Security →
 Open Anyway** on first launch.) Once notarized releases ship, neither step is
@@ -68,7 +69,7 @@ global hotkey so you never have to leave Ableton:
 
 ### #Piano mode
 
-Single notes by letter name — same model as chord mode, minus the qualities.
+Single notes by letter name, same model as chord mode, minus the qualities.
 Press **C D E F G A B** to play those natural notes; hold **]** for sharp or
 **[** for flat (`]`+`C` = C#, `[`+`B` = Bb); shift range with the octave keys.
 
@@ -84,7 +85,7 @@ Press **C D E F G A B** to play those natural notes; hold **]** for sharp or
 - Hold **]** while pressing the root to sharpen it (`]` + `G` = G#).
 - Hold **[** while pressing the root to flatten it (`[` + `G` = Gb).
 - Release the root letter → everything belonging to it stops.
-- Multiple roots track independently — hold `C` and `G`, give each a quality,
+- Multiple roots track independently: hold `C` and `G`, give each a quality,
   release them separately. The digit applies to the most recently pressed root.
 
 So: `G` + `7` = Gdom7. `]`+`F` + `9` = F#min7. `[`+`B` + `1` = Bbmaj. Think a
@@ -125,7 +126,7 @@ letters you play, they'll also be triggered alongside. Two mitigations:
 ## Running from source
 
 - Node.js 18+ (22.12+ if you want to package the DMG) and npm
-- Xcode Command Line Tools — needed to compile the two native modules:
+- Xcode Command Line Tools, needed to compile the two native modules:
   `xcode-select --install`
 
 ```bash
@@ -156,7 +157,7 @@ npm run rebuild:node   # native modules back to Node's ABI
 npm run cli
 ```
 
-(Then `npm run rebuild:electron` again before `npm start` — the two ABIs are
+(Then `npm run rebuild:electron` again before `npm start`; the two ABIs are
 incompatible, this is normal Electron friction.)
 
 ## Performance
