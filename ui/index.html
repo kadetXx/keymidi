@@ -160,6 +160,61 @@
   }
   .mode-hint kbd { margin: 0 1px; min-width: 12px; padding: 2px 2px; }
 
+  /* page switching — main controls vs scale palette */
+  .hidden { display: none; }
+
+  /* scale palette */
+  .key-row { display: flex; gap: 6px; }
+  .key-select {
+    flex: 1;
+    padding: 6px 26px 6px 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    /* Native select arrows sit at a fixed inset Chromium controls — draw our
+       own chevron so we (and the panel aesthetic) decide where it goes. */
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: var(--panel-raised);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' fill='none' stroke='%238a8f99' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+  .key-select:focus-visible { outline: 1px solid var(--led-amber); }
+  #rootSel { flex: 0 0 84px; }
+  .chord-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .chord-btn {
+    padding: 7px 0 6px;
+    font-family: var(--mono);
+    color: var(--ink);
+    background: var(--panel-raised);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .chord-btn:focus-visible { outline: 1px solid var(--led-amber); }
+  .chord-btn .numeral {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--ink-dim);
+    margin-bottom: 3px;
+  }
+  .chord-btn .name { font-size: 12px; }
+  .chord-btn.held {
+    background: var(--led-amber);
+    border-color: var(--led-amber);
+    color: #1a1408;
+  }
+  .chord-btn.held .numeral { color: #1a1408; }
+
   /* octave + velocity steppers */
   .row { display: flex; gap: 12px; }
   .stepper { flex: 1; }
@@ -231,12 +286,13 @@
     background: var(--led-off);
   }
   .port-led.open { background: #5dd97a; box-shadow: 0 0 6px rgba(93,217,122,0.4); }
-  #quit {
+  #quit, #pageToggle {
     background: none; border: none; cursor: pointer;
     color: var(--ink-dim);
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
   }
-  #quit:hover { color: var(--ink); }
+  #quit:hover, #pageToggle:hover { color: var(--ink); }
+  #pageToggle { margin-right: 10px; color: var(--led-amber); }
 
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
@@ -253,36 +309,73 @@
   </div>
 </header>
 
-<section>
-  <div class="label">Mode</div>
-  <div class="modes" id="modes">
-    <button class="mode-btn" data-mode="piano">PIANO·F6</button>
-    <button class="mode-btn" data-mode="chords">CHORD·F7</button>
-    <button class="mode-btn" data-mode="drums">DRUM·F8</button>
-  </div>
-  <div class="mode-hint" id="modeHint"></div>
-</section>
+<div id="pageMain">
+  <section>
+    <div class="label">Mode</div>
+    <div class="modes" id="modes">
+      <button class="mode-btn" data-mode="piano">PIANO·F6</button>
+      <button class="mode-btn" data-mode="chords">CHORD·F7</button>
+      <button class="mode-btn" data-mode="drums">DRUM·F8</button>
+    </div>
+    <div class="mode-hint" id="modeHint"></div>
+  </section>
 
-<section>
-  <div class="row">
-    <div class="stepper">
-      <div class="label">Octave<kbd>,</kbd><kbd>.</kbd></div>
-      <div class="stepper-body">
-        <button class="step-btn" id="octDown" aria-label="Octave down">−</button>
-        <div class="step-val" id="octVal">4</div>
-        <button class="step-btn" id="octUp" aria-label="Octave up">+</button>
+  <section>
+    <div class="row">
+      <div class="stepper">
+        <div class="label">Octave<kbd>,</kbd><kbd>.</kbd></div>
+        <div class="stepper-body">
+          <button class="step-btn" id="octDown" aria-label="Octave down">−</button>
+          <div class="step-val" id="octVal">4</div>
+          <button class="step-btn" id="octUp" aria-label="Octave up">+</button>
+        </div>
+      </div>
+      <div class="stepper">
+        <div class="label">Velocity<kbd>-</kbd><kbd>=</kbd></div>
+        <div class="stepper-body">
+          <button class="step-btn" id="velDown" aria-label="Velocity down">−</button>
+          <div class="step-val" id="velVal">100</div>
+          <button class="step-btn" id="velUp" aria-label="Velocity up">+</button>
+        </div>
       </div>
     </div>
-    <div class="stepper">
-      <div class="label">Velocity<kbd>-</kbd><kbd>=</kbd></div>
-      <div class="stepper-body">
-        <button class="step-btn" id="velDown" aria-label="Velocity down">−</button>
-        <div class="step-val" id="velVal">100</div>
-        <button class="step-btn" id="velUp" aria-label="Velocity up">+</button>
-      </div>
+  </section>
+</div>
+
+<div id="pagePalette" class="hidden">
+  <section>
+    <div class="label">Key</div>
+    <div class="key-row">
+      <select id="rootSel" class="key-select" aria-label="Scale root"></select>
+      <select id="scaleSel" class="key-select" aria-label="Scale">
+        <option value="major">Major</option>
+        <option value="minor">Minor</option>
+        <option value="harmonicMinor">Harmonic minor</option>
+        <option value="dorian">Dorian</option>
+        <option value="mixolydian">Mixolydian</option>
+      </select>
     </div>
-  </div>
-</section>
+  </section>
+
+  <section>
+    <div class="label">Chords · tap to play · hold to sustain</div>
+    <div class="chord-grid" id="chordGrid"></div>
+  </section>
+
+  <section>
+    <div class="row">
+      <div class="stepper">
+        <div class="label">Octave</div>
+        <div class="stepper-body">
+          <button class="step-btn" id="palOctDown" aria-label="Octave down">−</button>
+          <div class="step-val" id="palOctVal">4</div>
+          <button class="step-btn" id="palOctUp" aria-label="Octave up">+</button>
+        </div>
+      </div>
+      <div class="stepper" aria-hidden="true"></div>
+    </div>
+  </section>
+</div>
 
 <section class="log-section">
   <div class="label">Signal</div>
@@ -294,7 +387,10 @@
     <div class="port-led" id="portLed"></div>
     <span id="portName">KeyMIDI</span>
   </div>
-  <button id="quit">QUIT</button>
+  <div>
+    <button id="pageToggle" aria-label="Toggle scale palette">SCALES</button>
+    <button id="quit">QUIT</button>
+  </div>
 </footer>
 
 <script>
@@ -315,6 +411,7 @@
     });
     document.getElementById('modeHint').innerHTML = HINTS[state.mode] || '';
     document.getElementById('octVal').textContent = state.octave;
+    document.getElementById('palOctVal').textContent = state.octave;
     document.getElementById('velVal').textContent = state.velocity;
     document.getElementById('portLed').classList.toggle('open', state.portOpen);
     document.getElementById('portName').textContent = state.portOpen
@@ -337,12 +434,77 @@
 
   document.getElementById('octDown').addEventListener('click', () => api.setOctave(state.octave - 1));
   document.getElementById('octUp').addEventListener('click', () => api.setOctave(state.octave + 1));
+  document.getElementById('palOctDown').addEventListener('click', () => api.setOctave(state.octave - 1));
+  document.getElementById('palOctUp').addEventListener('click', () => api.setOctave(state.octave + 1));
   document.getElementById('velDown').addEventListener('click', () => api.setVelocity(state.velocity - 10));
   document.getElementById('velUp').addEventListener('click', () => api.setVelocity(state.velocity + 10));
   document.getElementById('quit').addEventListener('click', () => api.quit());
 
+  // ----- scale palette
+  const ROOT_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const palette = { rootPc: 0, scale: 'major', chords: [] };
+  const rootSel = document.getElementById('rootSel');
+  const chordGrid = document.getElementById('chordGrid');
+  const pageToggle = document.getElementById('pageToggle');
+  let onPalette = false;
+
+  ROOT_NAMES.forEach((name, pc) => {
+    const opt = document.createElement('option');
+    opt.value = pc;
+    opt.textContent = name;
+    rootSel.appendChild(opt);
+  });
+
+  async function refreshPalette() {
+    palette.chords = await api.getScaleChords(palette.rootPc, palette.scale);
+    chordGrid.innerHTML = '';
+    for (const c of palette.chords) {
+      const btn = document.createElement('button');
+      btn.className = 'chord-btn';
+      btn.innerHTML = `<span class="numeral">${c.numeral}</span><span class="name">${c.label}</span>`;
+      // mousedown/up = noteOn/off, so holding the button sustains the chord;
+      // mouseleave catches drags off the button so nothing hangs.
+      const down = () => { btn.classList.add('held'); api.paletteDown(c.notes, c.label); };
+      const up = () => {
+        if (!btn.classList.contains('held')) return;
+        btn.classList.remove('held');
+        api.paletteUp(c.notes);
+      };
+      btn.addEventListener('mousedown', down);
+      btn.addEventListener('mouseup', up);
+      btn.addEventListener('mouseleave', up);
+      chordGrid.appendChild(btn);
+    }
+  }
+
+  rootSel.addEventListener('change', () => {
+    palette.rootPc = Number(rootSel.value);
+    refreshPalette();
+  });
+
+  const scaleSel = document.getElementById('scaleSel');
+  scaleSel.addEventListener('change', () => {
+    palette.scale = scaleSel.value;
+    refreshPalette();
+  });
+
+  pageToggle.addEventListener('click', () => {
+    onPalette = !onPalette;
+    document.getElementById('pageMain').classList.toggle('hidden', onPalette);
+    document.getElementById('pagePalette').classList.toggle('hidden', !onPalette);
+    pageToggle.textContent = onPalette ? 'BACK' : 'SCALES';
+  });
+
+  refreshPalette();
+
   // ----- main process → UI
-  api.onState((s) => { state = s; render(); });
+  api.onState((s) => {
+    // Palette notes are voiced at the engine octave — refetch when it moves.
+    const octaveChanged = s.octave !== state.octave;
+    state = s;
+    render();
+    if (octaveChanged) refreshPalette();
+  });
 
   const log = document.getElementById('log');
   const MAX_LINES = 60;

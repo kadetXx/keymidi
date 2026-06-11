@@ -1,6 +1,7 @@
 import { KeyboardListener } from './listener';
 import { MidiOut } from './midi';
 import { Resolver } from './resolver';
+import { ScaleChord, ScaleName, scaleChords } from './scales';
 import {
   EngineState,
   EngineEvent,
@@ -100,6 +101,25 @@ export class Engine {
   setVelocity(velocity: number): void {
     this.state.velocity = Math.min(127, Math.max(1, velocity));
     this.emitState();
+  }
+
+  // ------------------------------------------------------- scale palette
+
+  /** Diatonic chords for the popover's palette, voiced at the current octave. */
+  getScaleChords(rootPc: number, scale: ScaleName): ScaleChord[] {
+    return scaleChords(rootPc, scale, this.state.octave);
+  }
+
+  paletteDown(notes: number[], label: string): void {
+    this.resolver.paletteDown(notes, label);
+  }
+
+  paletteUp(notes: number[]): void {
+    this.resolver.paletteUp(notes);
+  }
+
+  paletteAllOff(): void {
+    this.resolver.paletteAllOff();
   }
 
   getState(): EngineState {

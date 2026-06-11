@@ -30,6 +30,8 @@ export class Resolver {
   /** notes currently sounding, keyed by the physical key that started them */
   private activePiano = new Map<string, number>();
   private activeDrums = new Map<string, number>();
+  /** notes sounding from the popover's scale palette (mouse, not keyboard) */
+  private activePalette = new Set<number>();
   private heldRoots = new Map<string, HeldRoot>();
   private rootOrder: string[] = []; // most recent root last
 
@@ -170,6 +172,43 @@ export class Resolver {
     this.activeDrums.delete(key);
   }
 
+  // ---------------------------------------------------------------- palette
+
+  /**
+   * Scale-palette chords are tapped with the mouse in the popover, so they
+   * bypass the keyboard hook (and the enabled switch — a deliberate click is
+   * its own consent, and it lets you explore chords while paused).
+   */
+  paletteDown(notes: number[], label: string): void {
+    let sounded = false;
+    for (const n of notes) {
+      if (n < 0 || n > 127 || this.activePalette.has(n)) continue;
+      this.midi.noteOn(n, this.state.velocity, MELODIC_CHANNEL);
+      this.activePalette.add(n);
+      sounded = true;
+    }
+    if (sounded) {
+      this.emit({
+        ts: Date.now(),
+        kind: 'chord',
+        label: `${label} → ${notes.map(midiToName).join(' ')}`,
+      });
+    }
+  }
+
+  paletteUp(notes: number[]): void {
+    for (const n of notes) {
+      if (!this.activePalette.delete(n)) continue;
+      this.midi.noteOff(n, MELODIC_CHANNEL);
+    }
+  }
+
+  /** Kill palette notes only — used when the popover hides mid-hold. */
+  paletteAllOff(): void {
+    for (const n of this.activePalette) this.midi.noteOff(n, MELODIC_CHANNEL);
+    this.activePalette.clear();
+  }
+
   // -------------------------------------------------------------- controls
 
   /** Accidental from the held modifier keys: +1 sharp, -1 flat, 0 none. */
@@ -203,6 +242,7 @@ export class Resolver {
     this.rootOrder = [];
     for (const note of this.activeDrums.values()) this.midi.noteOff(note, DRUM_CHANNEL);
     this.activeDrums.clear();
+    this.paletteAllOff();
   }
 
   setMode(mode: Mode): void {

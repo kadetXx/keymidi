@@ -43,7 +43,7 @@ export const QUALITIES: Record<string, ChordQuality> = {
   '0': { name: 'sus2', intervals: [0, 2, 7] },
 };
 
-const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+export const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 export function midiToName(note: number): string {
   const name = NOTE_NAMES[((note % 12) + 12) % 12];

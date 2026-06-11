@@ -2,6 +2,7 @@ import { app, ipcMain, nativeImage } from 'electron';
 import { menubar } from 'menubar';
 import * as path from 'path';
 import { Engine } from './engine/engine';
+import { ScaleName } from './engine/scales';
 import { EngineEvent, EngineState } from './engine/types';
 
 // Tray-only app: no dock icon.
@@ -50,6 +51,10 @@ mb.on('show', () => {
   pushToWindow('keymidi:state', engine.getState());
 });
 
+// If the popover hides mid-tap, the mouseup never reaches the UI — kill any
+// palette notes so nothing hangs. Keyboard-held notes are untouched.
+mb.on('hide', () => engine.paletteAllOff());
+
 // ------------------------------------------------------------------- IPC
 
 ipcMain.handle('keymidi:getState', () => engine.getState());
@@ -57,6 +62,11 @@ ipcMain.on('keymidi:setEnabled', (_e: unknown, enabled: boolean) => engine.setEn
 ipcMain.on('keymidi:setMode', (_e: unknown, mode: 'piano' | 'chords' | 'drums') => engine.setMode(mode));
 ipcMain.on('keymidi:setOctave', (_e: unknown, octave: number) => engine.setOctave(octave));
 ipcMain.on('keymidi:setVelocity', (_e: unknown, velocity: number) => engine.setVelocity(velocity));
+ipcMain.handle('keymidi:getScaleChords', (_e: unknown, rootPc: number, scale: ScaleName) =>
+  engine.getScaleChords(rootPc, scale));
+ipcMain.on('keymidi:paletteDown', (_e: unknown, notes: number[], label: string) =>
+  engine.paletteDown(notes, label));
+ipcMain.on('keymidi:paletteUp', (_e: unknown, notes: number[]) => engine.paletteUp(notes));
 ipcMain.on('keymidi:quit', () => {
   engine.stop();
   app.quit();

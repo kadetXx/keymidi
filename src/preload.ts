@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { EngineEvent, EngineState, Mode } from './engine/types';
+import { ScaleChord, ScaleName } from './engine/scales';
 
 contextBridge.exposeInMainWorld('keymidi', {
   getState: (): Promise<EngineState> => ipcRenderer.invoke('keymidi:getState'),
@@ -7,6 +8,10 @@ contextBridge.exposeInMainWorld('keymidi', {
   setMode: (mode: Mode) => ipcRenderer.send('keymidi:setMode', mode),
   setOctave: (octave: number) => ipcRenderer.send('keymidi:setOctave', octave),
   setVelocity: (velocity: number) => ipcRenderer.send('keymidi:setVelocity', velocity),
+  getScaleChords: (rootPc: number, scale: ScaleName): Promise<ScaleChord[]> =>
+    ipcRenderer.invoke('keymidi:getScaleChords', rootPc, scale),
+  paletteDown: (notes: number[], label: string) => ipcRenderer.send('keymidi:paletteDown', notes, label),
+  paletteUp: (notes: number[]) => ipcRenderer.send('keymidi:paletteUp', notes),
   quit: () => ipcRenderer.send('keymidi:quit'),
   onState: (fn: (state: EngineState) => void) =>
     ipcRenderer.on('keymidi:state', (_e: unknown, state: EngineState) => fn(state)),
