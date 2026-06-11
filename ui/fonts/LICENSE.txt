@@ -1,0 +1,10 @@
+Bundled fonts, both licensed under the SIL Open Font License 1.1
+(https://openfontlicense.org):
+
+- Chakra Petch — Copyright 2020 The Chakra Petch Project Authors
+  (https://github.com/cadsondemak/chakra-petch)
+- IBM Plex Mono — Copyright 2017 IBM Corp.
+  (https://github.com/IBM/plex)
+
+Files are the latin-subset woff2 builds distributed by Fontsource
+(https://fontsource.org).

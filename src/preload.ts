@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('keymidi', {
   quit: () => ipcRenderer.send('keymidi:quit'),
   onState: (fn: (state: EngineState) => void) =>
     ipcRenderer.on('keymidi:state', (_e: unknown, state: EngineState) => fn(state)),
-  onEvent: (fn: (ev: EngineEvent) => void) =>
-    ipcRenderer.on('keymidi:event', (_e: unknown, ev: EngineEvent) => fn(ev)),
+  // Events arrive batched (~30ms windows) — one IPC per batch, not per note.
+  onEvents: (fn: (evs: EngineEvent[]) => void) =>
+    ipcRenderer.on('keymidi:events', (_e: unknown, evs: EngineEvent[]) => fn(evs)),
 });

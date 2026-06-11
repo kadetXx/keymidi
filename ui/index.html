@@ -13,8 +13,38 @@
     --led-amber: #ffb347;    /* vintage hardware LED */
     --led-amber-glow: rgba(255, 179, 71, 0.45);
     --led-off: #3a3e46;
-    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --face: "Space Grotesk", -apple-system, sans-serif; /* panel silkscreen */
+    --nametag: "Chakra Petch", -apple-system, sans-serif; /* brand header only */
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace; /* signal log */
     --sans: -apple-system, "SF Pro Text", system-ui, sans-serif;
+  }
+
+  /* Bundled fonts (see fonts/LICENSE.txt) — eurorack-style silkscreen face
+     for the panel, a quiet mono for the log where alignment matters. */
+  @font-face {
+    font-family: "Chakra Petch";
+    font-weight: 400;
+    src: url("fonts/chakra-petch-400.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: "Chakra Petch";
+    font-weight: 600;
+    src: url("fonts/chakra-petch-600.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: "Space Grotesk";
+    font-weight: 400;
+    src: url("fonts/space-grotesk-400.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: "Space Grotesk";
+    font-weight: 600;
+    src: url("fonts/space-grotesk-600.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: "IBM Plex Mono";
+    font-weight: 400;
+    src: url("fonts/ibm-plex-mono-400.woff2") format("woff2");
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -42,20 +72,29 @@
   }
 
   .brand {
-    font-family: var(--mono);
+    font-family: var(--nametag);
     font-size: 14px;
     letter-spacing: 0.16em;
     font-weight: 600;
   }
   .brand .dim { color: var(--ink-dim); }
 
-  /* hardware-style power switch */
+  /* hardware-style power switch — arms the keyboard hook, hence the caption.
+     (The scale palette is mouse-driven and works regardless.) */
   .power {
     display: flex;
     align-items: center;
     gap: 8px;
     cursor: pointer;
   }
+  .power-label {
+    font-family: var(--face);
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  body.on .power-label { color: var(--ink); }
   /* The popover auto-focuses the switch on open; only show a ring for real
      keyboard focus, not that programmatic/mouse focus. */
   .power:focus { outline: none; }
@@ -102,7 +141,7 @@
   section { padding: 12px 16px; border-bottom: 1px solid var(--line); }
 
   .label {
-    font-family: var(--mono);
+    font-family: var(--face);
     font-size: 10px;
     letter-spacing: 0.14em;
     color: var(--ink-dim);
@@ -116,7 +155,7 @@
     min-width: 15px;
     padding: 2px 3px;
     text-align: center;
-    font-family: var(--mono);
+    font-family: var(--face);
     font-size: 9px;
     line-height: 1;
     color: var(--ink);
@@ -133,7 +172,7 @@
   .mode-btn {
     flex: 1;
     padding: 8px 0;
-    font-family: var(--mono);
+    font-family: var(--face);
     font-size: 11px;
     letter-spacing: 0.08em;
     color: var(--ink-dim);
@@ -148,17 +187,17 @@
     color: #1a1408;
     background: var(--led-amber);
     border-color: var(--led-amber);
-    font-weight: 700;
+    font-weight: 600; /* heaviest bundled Chakra Petch weight */
   }
   .mode-hint {
     margin-top: 6px;
-    font-family: var(--mono);
-    font-size: 10px;
+    font-family: var(--face);
+    font-size: 11px;
     line-height: 1.7;
     color: var(--ink-dim);
     white-space: nowrap; /* hints are tuned to fit one line */
   }
-  .mode-hint kbd { margin: 0 1px; min-width: 12px; padding: 2px 2px; }
+  .mode-hint kbd { margin: 0 1px; min-width: 13px; padding: 2px 2px; font-size: 10px; }
 
   /* page switching — main controls vs scale palette */
   .hidden { display: none; }
@@ -168,7 +207,7 @@
   .key-select {
     flex: 1;
     padding: 6px 26px 6px 8px;
-    font-family: var(--mono);
+    font-family: var(--face);
     font-size: 12px;
     color: var(--ink);
     border: 1px solid var(--line);
@@ -191,7 +230,7 @@
   }
   .chord-btn {
     padding: 7px 0 6px;
-    font-family: var(--mono);
+    font-family: var(--face);
     color: var(--ink);
     background: var(--panel-raised);
     border: 1px solid var(--line);
@@ -232,7 +271,7 @@
     background: none;
     border: none;
     color: var(--ink-dim);
-    font-family: var(--mono);
+    font-family: var(--face);
     font-size: 14px;
     cursor: pointer;
   }
@@ -240,7 +279,7 @@
   .step-val {
     flex: 1;
     text-align: center;
-    font-family: var(--mono);
+    font-family: var(--face);
     font-size: 15px;
     color: var(--led-amber);
   }
@@ -261,6 +300,11 @@
     line-height: 1.7;
     color: var(--ink-dim);
   }
+  /* Styled scrollbar — the unstyled one expands to a white track on hover. */
+  #log::-webkit-scrollbar { width: 8px; }
+  #log::-webkit-scrollbar-track { background: transparent; }
+  #log::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+  #log::-webkit-scrollbar-thumb:hover { background: var(--ink-dim); }
   #log .ev-chord { color: var(--led-amber); }
   #log .ev-noteon, #log .ev-drum { color: var(--ink); }
   #log .ev-system { color: var(--ink-dim); font-style: italic; }
@@ -276,7 +320,7 @@
     justify-content: space-between;
     padding: 10px 16px;
     border-top: 1px solid var(--line);
-    font-family: var(--mono);
+    font-family: var(--face);
     font-size: 10px;
     color: var(--ink-dim);
   }
@@ -289,7 +333,7 @@
   #quit, #pageToggle {
     background: none; border: none; cursor: pointer;
     color: var(--ink-dim);
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    font-family: var(--face); font-size: 10px; letter-spacing: 0.1em;
   }
   #quit:hover, #pageToggle:hover { color: var(--ink); }
   #pageToggle { margin-right: 10px; color: var(--led-amber); }
@@ -303,7 +347,8 @@
 
 <header>
   <div class="brand">KEY<span class="dim">MIDI</span></div>
-  <div class="power" id="power" role="switch" aria-checked="false" tabindex="0" aria-label="KeyMIDI on/off (F9)">
+  <div class="power" id="power" role="switch" aria-checked="false" tabindex="0" aria-label="Keyboard capture on/off (F9)">
+    <span class="power-label">Keyboard</span>
     <div class="power-led"></div>
     <div class="power-track"><div class="power-thumb"></div></div>
   </div>
@@ -426,6 +471,11 @@
   power.addEventListener('keydown', (e) => {
     if (e.key === ' ' || e.key === 'Enter') togglePower();
   });
+  // Chromium restores focus to the switch when the window regains focus and
+  // styles it as keyboard-focus — drop it so the ring only shows for real Tab.
+  window.addEventListener('focus', () => {
+    if (document.activeElement === power) power.blur();
+  });
 
   document.getElementById('modes').addEventListener('click', (e) => {
     const btn = e.target.closest('.mode-btn');
@@ -488,12 +538,14 @@
     refreshPalette();
   });
 
-  pageToggle.addEventListener('click', () => {
-    onPalette = !onPalette;
-    document.getElementById('pageMain').classList.toggle('hidden', onPalette);
-    document.getElementById('pagePalette').classList.toggle('hidden', !onPalette);
-    pageToggle.textContent = onPalette ? 'BACK' : 'SCALES';
-  });
+  function showPage(paletteView) {
+    onPalette = paletteView;
+    document.getElementById('pageMain').classList.toggle('hidden', paletteView);
+    document.getElementById('pagePalette').classList.toggle('hidden', !paletteView);
+    pageToggle.textContent = paletteView ? 'KEYS' : 'SCALES';
+  }
+  pageToggle.addEventListener('click', () => showPage(!onPalette));
+  showPage(true); // scales lands first — zero-setup, the most-reached-for feature
 
   refreshPalette();
 
@@ -508,11 +560,19 @@
 
   const log = document.getElementById('log');
   const MAX_LINES = 60;
-  api.onEvent((ev) => {
-    const line = document.createElement('div');
-    line.className = 'ev-' + ev.kind;
-    line.textContent = ev.label;
-    log.appendChild(line);
+  // Events arrive batched from main — append the whole batch in one fragment
+  // so fast playing costs one reflow per ~30ms, not one per note. (Per-note
+  // appends + the scrollHeight read used to thrash layout hard enough to
+  // flicker the popover and back up the keyboard hook.)
+  api.onEvents((evs) => {
+    const frag = document.createDocumentFragment();
+    for (const ev of evs) {
+      const line = document.createElement('div');
+      line.className = 'ev-' + ev.kind;
+      line.textContent = ev.label;
+      frag.appendChild(line);
+    }
+    log.appendChild(frag);
     while (log.childNodes.length > MAX_LINES) log.removeChild(log.firstChild);
     log.scrollTop = log.scrollHeight;
   });

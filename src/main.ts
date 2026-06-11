@@ -29,19 +29,49 @@ const mb = menubar({
   showDockIcon: false,
 });
 
-function pushToWindow(channel: string, payload: EngineState | EngineEvent): void {
+function pushToWindow(channel: string, payload: EngineState | EngineEvent[]): void {
   mb.window?.webContents.send(channel, payload);
 }
+
+/**
+ * Events fire per note, so fast playing produces hundreds per second. Sending
+ * each one straight to the popover once saturated the IPC/DOM pipeline badly
+ * enough to back up uiohook's event tap — which sits in macOS's keyboard
+ * delivery chain, so the whole system's typing lagged (v0.2.0 incident).
+ * Batch them into one IPC per frame-ish window, and drop them outright while
+ * the popover is hidden: the log is a live signal monitor, not a recorder.
+ */
+const EVENT_FLUSH_MS = 33;
+const EVENT_QUEUE_MAX = 60; // matches the log's MAX_LINES — older lines would be pruned anyway
+let eventQueue: EngineEvent[] = [];
+let eventFlushTimer: NodeJS.Timeout | null = null;
+
+function queueEvent(ev: EngineEvent): void {
+  if (!mb.window?.isVisible()) return;
+  eventQueue.push(ev);
+  if (eventQueue.length > EVENT_QUEUE_MAX) eventQueue.splice(0, eventQueue.length - EVENT_QUEUE_MAX);
+  if (eventFlushTimer) return;
+  eventFlushTimer = setTimeout(() => {
+    eventFlushTimer = null;
+    const batch = eventQueue;
+    eventQueue = [];
+    pushToWindow('keymidi:events', batch);
+  }, EVENT_FLUSH_MS);
+}
+
+let lastTooltip = '';
 
 mb.on('ready', () => {
   engine.onState((state) => {
     pushToWindow('keymidi:state', state);
     // Tray tooltip doubles as an at-a-glance status
-    mb.tray.setToolTip(
-      `KeyMIDI — ${state.enabled ? 'ON' : 'paused'} · ${state.mode} · oct ${state.octave}`,
-    );
+    const tip = `KeyMIDI — ${state.enabled ? 'ON' : 'paused'} · ${state.mode} · oct ${state.octave}`;
+    if (tip !== lastTooltip) {
+      lastTooltip = tip;
+      mb.tray.setToolTip(tip);
+    }
   });
-  engine.onEvent((ev) => pushToWindow('keymidi:event', ev));
+  engine.onEvent(queueEvent);
 
   engine.start();
 });
