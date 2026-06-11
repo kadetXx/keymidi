@@ -45,14 +45,12 @@ launch, macOS either prompts you or the hook silently does nothing. Go to:
 If you granted it and keys still don't register, remove the entry, re-add it,
 and relaunch — macOS caches this per-binary and gets confused after rebuilds.
 
-## Ableton setup (one-time)
+## Using with Ableton
 
-KeyMIDI creates its own virtual MIDI source — no IAC driver needed.
-
-1. Launch KeyMIDI first, then Ableton.
-2. Ableton → Settings → Link/MIDI: you'll see **KeyMIDI** as an input.
-3. Enable **Track** (and **Remote** if you want) for the KeyMIDI input.
-4. Arm a MIDI track. Flip the switch in the KeyMIDI popover (or hit **F9**). Play.
+KeyMIDI creates its own virtual MIDI source (no IAC driver needed) and Ableton
+picks it up automatically. Arm a MIDI track, flip the switch in the popover
+(or hit **F9**), play. If Ableton doesn't hear it, see
+[Troubleshooting](#troubleshooting).
 
 ## How to play
 
@@ -171,9 +169,15 @@ If it feels slow, lower Ableton's audio buffer to 64–128 samples.
 
 ## Troubleshooting
 
-- **No "KeyMIDI" input in Ableton** → launch KeyMIDI before Ableton, or rescan
-  MIDI in Ableton's settings. Check the popover footer: the port LED should be
-  green / "OPEN".
+- **Ableton doesn't hear KeyMIDI** → check the popover footer first (the port
+  LED should be green / "OPEN"), then Ableton → Settings → Link/MIDI: **KeyMIDI**
+  should be listed as an input with **Track** enabled — enable it if not.
+  Also make sure your armed track's MIDI input is **All Ins** (or KeyMIDI
+  specifically). Still missing from the list? Relaunch KeyMIDI, or restart
+  Ableton to rescan.
+- **Splitting scales & drums onto two tracks** (the pro combo) → set one
+  track's input to **KeyMIDI · Ch. 1** (chords/notes) and another to
+  **KeyMIDI · Ch. 10** (drums), instead of All Ins.
 - **Keys don't register at all** → Accessibility permission (see above).
 - **`npm install` fails on uiohook-napi / easymidi** → missing Xcode CLT;
   run `xcode-select --install` then `npm install` again.
