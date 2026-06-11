@@ -7,7 +7,7 @@ What makes it different from Easy MIDI / MidiKeys / Ableton's built-in keyboard:
 
 - **Mnemonic drums**: `K` = Kick, `S` = Snare, `H` = Hat. No grid to memorize.
 - **Real-time chord grammar**: hold `G`, tap `1`, hear a Gmaj7. No presets.
-- **Global keyboard hook**: works while Ableton is focused/fullscreen/unfocused/it just works.
+- **Global keyboard hook**: works while DAW is focused/fullscreen/unfocused/it just works.
 
 ## Install
 
@@ -43,7 +43,7 @@ launch, macOS either prompts you or the hook silently does nothing. Go to:
 (or **Electron** if you're running from source).
 
 If you granted it and keys still don't register, remove the entry, re-add it,
-and relaunch — macOS caches this per-binary and gets confused after rebuilds.
+and relaunch. MacOS caches this per-binary and gets confused after rebuilds.
 
 ## Using with Ableton
 
@@ -171,7 +171,7 @@ If it feels slow, lower Ableton's audio buffer to 64–128 samples.
 
 - **Ableton doesn't hear KeyMIDI** → check the popover footer first (the port
   LED should be green / "OPEN"), then Ableton → Settings → Link/MIDI: **KeyMIDI**
-  should be listed as an input with **Track** enabled — enable it if not.
+  should be listed as an input with **Track** enabled. enable it if not.
   Also make sure your armed track's MIDI input is **All Ins** (or KeyMIDI
   specifically). Still missing from the list? Relaunch KeyMIDI, or restart
   Ableton to rescan.

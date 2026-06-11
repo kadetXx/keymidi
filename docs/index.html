@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KeyMIDI — your keyboard is the instrument</title>
+    <meta
+      name="description"
+      content="A tiny macOS menu-bar app that turns the keyboard you already own into a chord-aware MIDI controller for Ableton or any DAW. Free & open source." />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <meta property="og:title" content="KeyMIDI — your keyboard is the instrument" />
+    <meta
+      property="og:description"
+      content="hold G · tap 7 · that's a Gdom7. Chord grammar, scale pads and mnemonic drums on the keyboard you already own. Free & open source for macOS." />
+    <meta property="og:image" content="https://keymidi.app/icon.png" />
+    <meta property="og:url" content="https://keymidi.app" />
+    <meta name="twitter:card" content="summary" />
+    <style>
+      /* ---- the app's faceplate palette, verbatim ---- */
+      :root {
+        --page: #0f1114;
+        --panel: #16181c;
+        --panel-raised: #1e2127;
+        --line: #2a2e36;
+        --ink: #e8e6df;
+        --ink-dim: #8a8f99;
+        --amber: #ffb347;
+        --amber-glow: rgba(255, 179, 71, 0.45);
+        --face: 'Space Grotesk', -apple-system, sans-serif;
+        --nametag: 'Chakra Petch', -apple-system, sans-serif;
+        --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+      }
+      @font-face {
+        font-family: 'Chakra Petch';
+        font-weight: 400;
+        src: url('fonts/chakra-petch-400.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Chakra Petch';
+        font-weight: 600;
+        src: url('fonts/chakra-petch-600.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Space Grotesk';
+        font-weight: 400;
+        src: url('fonts/space-grotesk-400.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Space Grotesk';
+        font-weight: 600;
+        src: url('fonts/space-grotesk-600.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'IBM Plex Mono';
+        font-weight: 400;
+        src: url('fonts/ibm-plex-mono-400.woff2') format('woff2');
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--page);
+        color: var(--ink);
+        font-family: var(--face);
+        font-size: 16px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        text-align: center;
+      }
+      a {
+        color: inherit;
+      }
+
+      /* ------------------------------------------------------------- stage */
+      .stage {
+        position: relative;
+        min-height: 100dvh;
+        overflow: hidden;
+      }
+      .hero {
+        position: relative;
+        z-index: 3;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100dvh;
+        padding: 32px 24px;
+        pointer-events: none;
+        background:
+          radial-gradient(ellipse 80% 55% at 50% 38%, rgba(255, 179, 71, 0.06), transparent 70%),
+          transparent;
+      }
+      .hero-core {
+        position: relative;
+        z-index: 5;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        pointer-events: auto;
+      }
+      .icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 13px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+      }
+      h1 {
+        font-family: var(--nametag);
+        font-weight: 600;
+        font-size: 24px;
+        letter-spacing: 0.22em;
+        margin: 16px 0 0 0.22em; /* offset trailing letter-space so it centers true */
+      }
+      h1 i {
+        font-style: normal;
+        color: var(--ink-dim);
+      }
+      .tag {
+        color: var(--ink-dim);
+        font-size: 15px;
+        line-height: 1.55;
+        max-width: 26em;
+        margin-top: 8px;
+      }
+      kbd {
+        display: inline-block;
+        min-width: 18px;
+        padding: 3px 5px;
+        text-align: center;
+        font-family: var(--mono);
+        font-size: 11px;
+        line-height: 1;
+        color: var(--ink);
+        background: var(--panel-raised);
+        border: 1px solid var(--line);
+        border-bottom-width: 2px;
+        border-radius: 4px;
+      }
+
+      /* --------------------------------------------- popover replica (live) */
+      .pop {
+        /* definite width, capped to the viewport — never derived from content,
+           so the box can't go thin or shift as the animated hint changes */
+        width: 400px;
+        max-width: calc(100vw - 48px);
+        height: 480px; /* same fixed size as the real popover */
+        display: flex;
+        flex-direction: column;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+        font-size: 13px;
+        user-select: none;
+        text-align: left;
+      }
+      /* the signal section flexes to fill, so both replicas end up identical
+         height regardless of what's above it — exactly like the app */
+      .pop section:last-of-type {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        border-bottom: none;
+      }
+      .pop section:last-of-type .log {
+        flex: 1;
+        height: auto;
+      }
+      .pop header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px 12px;
+        border-bottom: 1px solid var(--line);
+      }
+      .pop .brand {
+        font-family: var(--nametag);
+        font-weight: 600;
+        font-size: 14px;
+        letter-spacing: 0.16em;
+      }
+      .pop .brand i {
+        font-style: normal;
+        color: var(--ink-dim);
+      }
+      .pop .power {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .pop .plabel {
+        font-size: 9px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink);
+      }
+      .pop .led {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--amber);
+        box-shadow: 0 0 8px var(--amber-glow);
+      }
+      .pop .track {
+        width: 44px;
+        height: 22px;
+        border-radius: 4px;
+        background: var(--panel-raised);
+        border: 1px solid var(--amber);
+        position: relative;
+      }
+      .pop .thumb {
+        position: absolute;
+        top: 2px;
+        left: 22px;
+        width: 18px;
+        height: 16px;
+        border-radius: 3px;
+        background: linear-gradient(180deg, #ffc46b, #e89a2e);
+      }
+      .pop section {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .pop .lab {
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        color: var(--ink-dim);
+        text-transform: uppercase;
+        margin-bottom: 8px;
+      }
+      .pop .keyrow {
+        display: flex;
+        gap: 6px;
+      }
+      .pop .sel {
+        flex: 1;
+        padding: 6px 26px 6px 8px;
+        font-size: 12px;
+        color: var(--ink);
+        background-color: var(--panel-raised);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' fill='none' stroke='%238a8f99' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+      }
+      .pop .sel:first-child {
+        flex: 0 0 84px;
+      }
+      .pop .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+      }
+      .pad {
+        padding: 7px 0 6px;
+        color: var(--ink);
+        background: var(--panel-raised);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        cursor: pointer;
+        text-align: center;
+        font-family: var(--face);
+        touch-action: none;
+      }
+      .pad .nm {
+        display: block;
+        font-size: 9px;
+        letter-spacing: 0.08em;
+        color: var(--ink-dim);
+        margin-bottom: 3px;
+      }
+      .pad .ch {
+        font-size: 12px;
+      }
+      .pad.held {
+        background: var(--amber);
+        border-color: var(--amber);
+        color: #1a1408;
+      }
+      .pad.held .nm {
+        color: #1a1408;
+      }
+      .pop .log {
+        height: 96px;
+        overflow: hidden;
+        font-family: var(--mono);
+        font-size: 11px;
+        line-height: 1.7;
+        color: var(--ink-dim);
+      }
+      .pop .log .amber {
+        color: var(--amber);
+      }
+      .pop footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 16px;
+        font-size: 10px;
+        color: var(--ink-dim);
+        letter-spacing: 0.1em;
+      }
+      .pop .port {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .pop .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #5dd97a;
+        box-shadow: 0 0 6px rgba(93, 217, 122, 0.4);
+      }
+      .pop .fbtns span {
+        margin-left: 12px;
+      }
+      .pop .fbtns .amber {
+        color: var(--amber);
+      }
+      .caption {
+        margin: 14px 0 0;
+        font-size: 12.5px;
+        color: var(--ink-dim);
+      }
+      .caption b {
+        color: var(--amber);
+        font-weight: 400;
+      }
+
+      /* ------------------------------------------- demos (desktop flank) */
+      .demos {
+        display: none;
+      }
+      .stage-vignette {
+        display: none;
+      }
+      /* keys-view replica internals (mirrors the app) */
+      .pop .modes {
+        display: flex;
+        gap: 6px;
+      }
+      .pop .mbtn {
+        flex: 1;
+        padding: 8px 0;
+        font-family: var(--face);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        color: var(--ink-dim);
+        background: var(--panel-raised);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        text-align: center;
+        transition: background 200ms, color 200ms, border-color 200ms;
+      }
+      .pop .mbtn.active {
+        color: #1a1408;
+        background: var(--amber);
+        border-color: var(--amber);
+        font-weight: 600;
+      }
+      .pop .mhint {
+        margin-top: 8px;
+        font-family: var(--face);
+        font-size: 11px;
+        line-height: 1.7;
+        color: var(--ink-dim);
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      .pop .mhint kbd {
+        margin: 0 1px;
+        min-width: 13px;
+        padding: 2px 2px;
+        font-size: 10px;
+      }
+      .pop .row {
+        display: flex;
+        gap: 12px;
+      }
+      .pop .stepper {
+        flex: 1;
+      }
+      .pop .stepbody {
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background: var(--panel-raised);
+        overflow: hidden;
+      }
+      .pop .stepbody .b {
+        width: 30px;
+        padding: 6px 0;
+        text-align: center;
+        color: var(--ink-dim);
+        font-size: 14px;
+      }
+      .pop .stepbody .v {
+        flex: 1;
+        text-align: center;
+        font-size: 15px;
+        color: var(--amber);
+      }
+      .pop .log .ink {
+        color: var(--ink);
+      }
+
+      /* ---------------------------------------------------------- actions */
+      .actions {
+        --btn-h: 42px;
+        margin: 32px 0 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        height: var(--btn-h);
+        padding: 0 28px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 15px;
+        line-height: 1;
+        color: var(--page);
+        background: var(--ink); /* #E8E6DF — icon glyph silkscreen in packaging/icon.svg */
+        border-radius: 999px;
+      }
+      .btn:hover {
+        color: var(--page);
+        filter: brightness(1.06);
+        box-shadow: 0 0 24px rgba(232, 230, 223, 0.22);
+      }
+      .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: var(--btn-h);
+        height: var(--btn-h);
+        text-decoration: none;
+        color: var(--ink-dim);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: calc(var(--btn-h) / 2);
+      }
+      .btn-icon:hover {
+        color: var(--ink);
+        border-color: var(--ink-dim);
+      }
+      .btn-icon svg {
+        width: 17px;
+        height: 17px;
+      }
+
+      @media (min-width: 1025px) {
+        .stage {
+          background: var(--page);
+        }
+        .demos {
+          display: block;
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          perspective: 1500px;
+          perspective-origin: 50% 42%;
+          pointer-events: none;
+        }
+        .demo {
+          position: absolute;
+          top: 50%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          pointer-events: auto;
+          transform-style: preserve-3d;
+          will-change: transform;
+        }
+        .demo--left {
+          left: max(-48px, calc(50% - 54vw));
+          transform: translateY(-50%) rotateY(26deg) scale(0.84);
+          transform-origin: right center;
+        }
+        .demo--right {
+          right: max(-48px, calc(50% - 54vw));
+          transform: translateY(-50%) rotateY(-26deg) scale(0.84);
+          transform-origin: left center;
+        }
+        .demo .pop {
+          box-shadow: 0 28px 90px rgba(0, 0, 0, 0.55);
+        }
+        .stage-vignette {
+          display: block;
+          position: absolute;
+          inset: 0;
+          z-index: 4;
+          pointer-events: none;
+          background:
+            linear-gradient(
+              to right,
+              rgba(15, 17, 20, 0.45) 0%,
+              rgba(15, 17, 20, 0.15) 7%,
+              transparent 16%
+            ),
+            linear-gradient(
+              to left,
+              rgba(15, 17, 20, 0.45) 0%,
+              rgba(15, 17, 20, 0.15) 7%,
+              transparent 16%
+            );
+        }
+      }
+
+      @media (min-width: 1400px) {
+        .demo--left {
+          transform: translateY(-50%) rotateY(22deg) scale(0.9);
+        }
+        .demo--right {
+          transform: translateY(-50%) rotateY(-22deg) scale(0.9);
+        }
+      }
+
+      @media (max-width: 480px) {
+        .hero {
+          padding: 28px 20px;
+        }
+        h1 {
+          font-size: 22px;
+          letter-spacing: 0.2em;
+        }
+        .tag {
+          font-size: 14.5px;
+        }
+        .actions {
+          margin-top: 28px;
+        }
+        .btn {
+          width: 100%;
+          max-width: 280px;
+          justify-content: center;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <div class="demos" aria-label="App preview">
+        <!-- left: animated keyboard-modes showcase -->
+        <div class="demo demo--left">
+          <div class="pop" aria-label="KeyMIDI keyboard view — animated demo">
+            <header>
+              <div class="brand">KEY<i>MIDI</i></div>
+              <div class="power">
+                <span class="plabel">Keyboard</span>
+                <div class="led"></div>
+                <div class="track"><div class="thumb"></div></div>
+              </div>
+            </header>
+            <section>
+              <div class="lab">Mode</div>
+              <div class="modes">
+                <div class="mbtn" data-mode="piano">PIANO·F6</div>
+                <div class="mbtn" data-mode="chords">CHORD·F7</div>
+                <div class="mbtn" data-mode="drums">DRUM·F8</div>
+              </div>
+              <div class="mhint" id="khint"></div>
+            </section>
+            <section>
+              <div class="row">
+                <div class="stepper">
+                  <div class="lab">Octave</div>
+                  <div class="stepbody">
+                    <div class="b">−</div>
+                    <div class="v">4</div>
+                    <div class="b">+</div>
+                  </div>
+                </div>
+                <div class="stepper">
+                  <div class="lab">Velocity</div>
+                  <div class="stepbody">
+                    <div class="b">−</div>
+                    <div class="v">100</div>
+                    <div class="b">+</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <section>
+              <div class="lab">Signal</div>
+              <div class="log" id="klog"></div>
+            </section>
+            <footer>
+              <div class="port">
+                <div class="dot"></div>
+                <span>KeyMIDI · OPEN</span>
+              </div>
+              <div class="fbtns"><span class="amber">SCALES</span><span>QUIT</span></div>
+            </footer>
+          </div>
+        </div>
+
+        <!-- right: interactive scales replica -->
+        <div class="demo demo--right">
+          <div class="pop" aria-label="KeyMIDI scales view — interactive">
+            <header>
+              <div class="brand">KEY<i>MIDI</i></div>
+              <div class="power">
+                <span class="plabel">Keyboard</span>
+                <div class="led"></div>
+                <div class="track"><div class="thumb"></div></div>
+              </div>
+            </header>
+            <section>
+              <div class="lab">Key</div>
+              <div class="keyrow">
+                <div class="sel">C</div>
+                <div class="sel">Major</div>
+              </div>
+            </section>
+            <section>
+              <div class="lab">Chords · tap to play · hold to sustain</div>
+              <div class="grid" id="pads"></div>
+            </section>
+            <section>
+              <div class="lab">Signal</div>
+              <div class="log" id="log"></div>
+            </section>
+            <footer>
+              <div class="port">
+                <div class="dot"></div>
+                <span>KeyMIDI · OPEN</span>
+              </div>
+              <div class="fbtns"><span class="amber">KEYS</span><span>QUIT</span></div>
+            </footer>
+          </div>
+        </div>
+      </div>
+
+      <header class="hero">
+        <div class="hero-core">
+          <img class="icon" src="icon.png" alt="" width="56" height="56" />
+          <h1>KEY<i>MIDI</i></h1>
+          <p class="tag">
+            your &quot;literal&quot; keyboard as midi notes. point &amp; click chords
+            by scale, or type verbatim. any DAW.
+          </p>
+
+          <div class="actions">
+            <a
+              class="btn"
+              id="download-btn"
+              href="https://github.com/kadetXx/keymidi/releases/latest"
+              >Download for Mac</a
+            >
+            <a
+              class="btn-icon"
+              href="https://github.com/kadetXx/keymidi"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="View on GitHub"
+              title="GitHub">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A8.996 8.996 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <div class="stage-vignette" aria-hidden="true"></div>
+    </div>
+
+    <script>
+      // ---- the seven chords of C major, voiced like the app (octave 4) ----
+      const CHORDS = [
+        { nm: 'I', ch: 'C', notes: [60, 64, 67] },
+        { nm: 'ii', ch: 'Dm', notes: [62, 65, 69] },
+        { nm: 'iii', ch: 'Em', notes: [64, 67, 71] },
+        { nm: 'IV', ch: 'F', notes: [65, 69, 72] },
+        { nm: 'V', ch: 'G', notes: [67, 71, 74] },
+        { nm: 'vi', ch: 'Am', notes: [69, 72, 76] },
+        { nm: 'vii°', ch: 'Bdim', notes: [71, 74, 77] },
+      ];
+      const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      const noteName = n => NAMES[n % 12] + (Math.floor(n / 12) - 1);
+
+      // ---- tiny poly synth so the replica actually makes sound ----
+      let ctx = null;
+      function startChord(notes) {
+        ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        const t = ctx.currentTime;
+        const voices = notes.map(n => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = 'triangle';
+          o.frequency.value = 440 * Math.pow(2, (n - 69) / 12);
+          g.gain.setValueAtTime(0, t);
+          g.gain.linearRampToValueAtTime(0.06, t + 0.02);
+          o.connect(g).connect(ctx.destination);
+          o.start(t);
+          return { o, g };
+        });
+        return () => {
+          const t2 = ctx.currentTime;
+          voices.forEach(({ o, g }) => {
+            g.gain.setTargetAtTime(0, t2, 0.09);
+            o.stop(t2 + 0.6);
+          });
+        };
+      }
+
+      // ---- build the pads ----
+      const grid = document.getElementById('pads');
+      const log = document.getElementById('log');
+      let lastTouch = 0;
+
+      function logLine(c) {
+        const div = document.createElement('div');
+        div.className = 'amber';
+        div.textContent = `${c.ch} → ${c.notes.map(noteName).join(' ')}`;
+        log.appendChild(div);
+        while (log.childNodes.length > 5) log.removeChild(log.firstChild);
+      }
+
+      CHORDS.forEach(c => {
+        const pad = document.createElement('button');
+        pad.className = 'pad';
+        pad.style.font = 'inherit';
+        pad.innerHTML = `<span class="nm">${c.nm}</span><span class="ch">${c.ch}</span>`;
+        let stop = null;
+        const down = e => {
+          e.preventDefault();
+          lastTouch = Date.now();
+          pad.classList.add('held');
+          stop = startChord(c.notes);
+          logLine(c);
+        };
+        const up = () => {
+          pad.classList.remove('held');
+          if (stop) {
+            stop();
+            stop = null;
+          }
+        };
+        pad.addEventListener('pointerdown', down);
+        pad.addEventListener('pointerup', up);
+        pad.addEventListener('pointerleave', up);
+        pad.addEventListener('pointercancel', up);
+        grid.appendChild(pad);
+        c.el = pad;
+      });
+
+      // ---- silent auto-demo: the four chords of pop, until the visitor plays ----
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const SEQ = [0, 4, 5, 3]; // I V vi IV
+      let step = 0;
+      if (!reduced) {
+        setInterval(() => {
+          if (Date.now() - lastTouch < 6000) return; // visitor is playing — stay quiet
+          const c = CHORDS[SEQ[step % SEQ.length]];
+          step++;
+          c.el.classList.add('held');
+          logLine(c);
+          setTimeout(() => c.el.classList.remove('held'), 520);
+        }, 950);
+      } else {
+        CHORDS.slice(0, 3).forEach(logLine);
+      }
+
+      // ---- second replica: animated keyboard-modes showcase ----------------
+      // Cycles chords → piano → drums with the app's real helper texts and
+      // sample signal lines. Purely visual: no sound, no clickable keys.
+      const KMODES = [
+        {
+          id: 'chords',
+          hint: 'Play <kbd>A</kbd>–<kbd>G</kbd> · <kbd>1</kbd>–<kbd>0</kbd> for chord type · <kbd>]</kbd> sharp · <kbd>[</kbd> flat',
+          lines: [
+            ['Gmaj7 → G4 B4 D5 F#5', 'amber'],
+            ['C → C4 E4 G4', 'amber'],
+            ['Am → A4 C5 E5', 'amber'],
+          ],
+        },
+        {
+          id: 'piano',
+          hint: 'Play <kbd>A</kbd>–<kbd>G</kbd> · <kbd>]</kbd> sharp · <kbd>[</kbd> flat',
+          lines: [
+            ['C4', 'ink'],
+            ['E4', 'ink'],
+            ['G4', 'ink'],
+            ['Bb4', 'ink'],
+          ],
+        },
+        {
+          id: 'drums',
+          hint: '<kbd>K</kbd> kick · <kbd>S</kbd> snare · <kbd>H</kbd>/<kbd>O</kbd> hats · <kbd>C</kbd> clap · <kbd>X</kbd> crash',
+          lines: [
+            ['Kick', 'ink'],
+            ['Snare', 'ink'],
+            ['Closed Hat', 'ink'],
+            ['Snare', 'ink'],
+          ],
+        },
+      ];
+      const khint = document.getElementById('khint');
+      const klog = document.getElementById('klog');
+      const kbtns = [...document.querySelectorAll('.mbtn')];
+      let kEmitTimer = null;
+
+      function showMode(m) {
+        kbtns.forEach(b => b.classList.toggle('active', b.dataset.mode === m.id));
+        khint.innerHTML = m.hint;
+        klog.innerHTML = '';
+        clearTimeout(kEmitTimer);
+        let li = 0;
+        const emit = () => {
+          if (li >= m.lines.length) return;
+          const [text, cls] = m.lines[li++];
+          const div = document.createElement('div');
+          div.className = cls;
+          div.textContent = text;
+          klog.appendChild(div);
+          while (klog.childNodes.length > 6) klog.removeChild(klog.firstChild);
+          kEmitTimer = setTimeout(emit, 460);
+        };
+        emit();
+      }
+
+      let kmi = 0;
+      showMode(KMODES[0]);
+      if (!reduced) {
+        setInterval(() => {
+          kmi = (kmi + 1) % KMODES.length;
+          showMode(KMODES[kmi]);
+        }, 2800);
+      }
+
+      // ---- Mac download: direct .dmg when arch is known, else releases page ----
+      const RELEASES_URL = 'https://github.com/kadetXx/keymidi/releases/latest';
+      const isMac =
+        /Mac|Macintosh|Mac OS X/i.test(navigator.userAgent) ||
+        navigator.platform === 'MacIntel' ||
+        navigator.userAgentData?.platform === 'macOS';
+
+      async function macDownloadArch() {
+        if (navigator.userAgentData?.getHighEntropyValues) {
+          try {
+            const { architecture } = await navigator.userAgentData.getHighEntropyValues([
+              'architecture',
+            ]);
+            if (architecture === 'arm') return 'arm64';
+            if (architecture === 'x86') return 'x64';
+          } catch (_) {}
+        }
+        try {
+          const gl = document.createElement('canvas').getContext('webgl');
+          const ext = gl?.getExtension('WEBGL_debug_renderer_info');
+          if (ext) {
+            const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
+            if (/Apple M\d/i.test(renderer)) return 'arm64';
+            if (/Intel|AMD Radeon/i.test(renderer)) return 'x64';
+          }
+        } catch (_) {}
+        return null;
+      }
+
+      (async () => {
+        if (!isMac) return;
+        const arch = await macDownloadArch();
+        if (!arch) return;
+        try {
+          const res = await fetch(
+            'https://api.github.com/repos/kadetXx/keymidi/releases/latest'
+          );
+          if (!res.ok) return;
+          const release = await res.json();
+          const suffix = arch === 'arm64' ? '-arm64.dmg' : '-x64.dmg';
+          const asset = release.assets?.find(a => a.name.endsWith(suffix));
+          if (asset?.browser_download_url) {
+            document.getElementById('download-btn').href = asset.browser_download_url;
+          }
+        } catch (_) {}
+      })();
+
+    </script>
+  </body>
+</html>
