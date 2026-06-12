@@ -45,6 +45,9 @@ for dmg in "${DMGS[@]}"; do
   fi
 
   echo ""
+  echo "→ Signing $dmg"
+  codesign --force --sign "$(codesign_identity)" --timestamp "$dmg"
+
   echo "→ Submitting $dmg"
   xcrun notarytool submit "$dmg" "${notary_args[@]}" --wait
 
@@ -53,7 +56,7 @@ for dmg in "${DMGS[@]}"; do
   xcrun stapler validate "$dmg"
 
   echo "→ Gatekeeper check"
-  spctl -a -vv --type install "$dmg"
+  spctl -a -t open --context context:primary-signature -vv "$dmg"
 done
 
 echo ""

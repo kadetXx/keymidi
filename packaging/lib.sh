@@ -48,4 +48,14 @@ require_gh() {
   fi
 }
 
+# electron-builder accepts a short CSC_NAME; codesign needs the full identity.
+codesign_identity() {
+  local name="${CSC_NAME:-COLLINS ENEBELI (LPV78GHYTM)}"
+  if [[ "$name" == Developer\ ID* ]]; then
+    echo "$name"
+  else
+    echo "Developer ID Application: $name"
+  fi
+}
+
 load_release_env
