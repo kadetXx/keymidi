@@ -11,8 +11,10 @@ export interface EngineState {
 
 export interface EngineEvent {
   ts: number;
-  kind: 'noteon' | 'noteoff' | 'chord' | 'drum' | 'system';
+  kind: 'noteon' | 'noteoff' | 'chord' | 'drum' | 'system' | 'keyup';
   label: string;       // human-readable, e.g. "Gdom7 → G3 B3 D4 F4"
+  key?: string;        // physical key — for pad highlight release
+  notes?: number[];    // MIDI notes sounding — for pad matching
 }
 
 export type StateListener = (state: EngineState) => void;

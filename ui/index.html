@@ -262,6 +262,14 @@
     color: #1a1408;
   }
   .chord-btn.held .numeral { color: #1a1408; }
+  /* Chord mode: root held, quality not yet chosen — hint, not a full match */
+  .chord-btn.held-root {
+    background: rgba(255, 179, 71, 0.14);
+    border-color: rgba(255, 179, 71, 0.16);
+    color: var(--ink);
+  }
+  .chord-btn.held-root .numeral,
+  .chord-btn.held-root .name { color: var(--led-amber); }
 
   /* octave + velocity steppers */
   .row { display: flex; gap: 12px; }
@@ -478,6 +486,8 @@
   const scaleSel = document.getElementById('scaleSel');
   const padGrid = document.getElementById('padGrid');
   const padLabel = document.getElementById('padLabel');
+  let padButtons = [];
+  let padDefs = [];
   ROOT_NAMES.forEach((name, pc) => {
     const opt = document.createElement('option');
     opt.value = pc;
@@ -490,6 +500,63 @@
     scaleSel.disabled = drums;
   }
 
+  function notesMatch(a, b) {
+    return a.length === b.length && a.every((n, i) => n === b[i]);
+  }
+
+  /** Map a keyboard event to a visible pad index, if any. */
+  function findPadForEvent(ev) {
+    if (!ev.notes?.length) return { i: -1, rootOnly: false };
+    if (state.mode === 'drums') {
+      if (ev.key) {
+        const byKey = padDefs.findIndex((p) => p.key === ev.key);
+        if (byKey >= 0) return { i: byKey, rootOnly: false };
+      }
+      const i = padDefs.findIndex((p) => p.notes[0] === ev.notes[0]);
+      return { i, rootOnly: false };
+    }
+    if (state.mode === 'piano') {
+      const i = padDefs.findIndex((p) => p.notes[0] === ev.notes[0]);
+      return { i, rootOnly: false };
+    }
+    if (state.mode === 'chords') {
+      const exact = padDefs.findIndex((p) => notesMatch(p.notes, ev.notes));
+      if (exact >= 0) return { i: exact, rootOnly: false };
+      if (ev.kind === 'noteon' && ev.notes.length === 1) {
+        const i = padDefs.findIndex((p) => p.notes[0] === ev.notes[0]);
+        return { i, rootOnly: i >= 0 };
+      }
+    }
+    return { i: -1, rootOnly: false };
+  }
+
+  function kbHighlightPad(index, key, rootOnly = false) {
+    const btn = padButtons[index];
+    if (!btn) return;
+    btn.classList.remove('held', 'held-root');
+    btn.classList.add(rootOnly ? 'held-root' : 'held');
+    if (key) btn.dataset.kbKey = key;
+  }
+
+  function kbReleaseKey(key) {
+    for (const btn of padButtons) {
+      if (btn.dataset.kbKey === key) {
+        btn.classList.remove('held', 'held-root');
+        delete btn.dataset.kbKey;
+      }
+    }
+  }
+
+  function syncPadFromKeyboard(ev) {
+    if (ev.kind === 'keyup') {
+      if (ev.key) kbReleaseKey(ev.key);
+      return;
+    }
+    if (ev.kind !== 'noteon' && ev.kind !== 'chord' && ev.kind !== 'drum') return;
+    const { i, rootOnly } = findPadForEvent(ev);
+    if (i >= 0 && ev.key) kbHighlightPad(i, ev.key, rootOnly);
+  }
+
   // The pad grid mirrors the active mode: chord triads of the key, the key's
   // scale notes (melodies), or the GM drum kit. Each pad is { top, bottom,
   // notes }; drums route to the drum channel. Key/scale stay visible but disabled.
@@ -500,7 +567,9 @@
     if (mode === 'drums') {
       drum = true;
       padLabel.textContent = 'Drums · tap to play';
-      pads = (await api.getDrumPads()).map((d) => ({ top: d.key, bottom: d.label, notes: d.notes }));
+      pads = (await api.getDrumPads()).map((d) => ({
+        key: d.key, top: d.key, bottom: d.label, notes: d.notes,
+      }));
     } else if (mode === 'piano') {
       padLabel.textContent = 'Notes · tap to play · hold to sustain';
       pads = (await api.getScaleNotes(palette.rootPc, palette.scale))
@@ -511,22 +580,31 @@
         .map((c) => ({ top: c.numeral, bottom: c.label, notes: c.notes }));
     }
     padGrid.innerHTML = '';
+    padButtons = [];
+    padDefs = pads;
     for (const p of pads) {
       const btn = document.createElement('button');
       btn.className = 'chord-btn';
       btn.innerHTML = `<span class="numeral">${p.top}</span><span class="name">${p.bottom}</span>`;
       // mousedown/up = noteOn/off so holding a pad sustains; mouseleave catches
       // a drag off the pad so nothing hangs.
-      const down = () => { btn.classList.add('held'); api.paletteDown(p.notes, p.bottom, drum); };
+      const down = () => {
+        delete btn.dataset.kbKey;
+        btn.classList.remove('held-root');
+        btn.classList.add('held');
+        api.paletteDown(p.notes, p.bottom, drum);
+      };
       const up = () => {
+        if (btn.dataset.kbKey) return;
         if (!btn.classList.contains('held')) return;
-        btn.classList.remove('held');
+        btn.classList.remove('held', 'held-root');
         api.paletteUp(p.notes, drum);
       };
       btn.addEventListener('mousedown', down);
       btn.addEventListener('mouseup', up);
       btn.addEventListener('mouseleave', up);
       padGrid.appendChild(btn);
+      padButtons.push(btn);
     }
   }
 
@@ -548,6 +626,8 @@
   api.onEvents((evs) => {
     const frag = document.createDocumentFragment();
     for (const ev of evs) {
+      syncPadFromKeyboard(ev);
+      if (ev.kind === 'keyup') continue;
       const line = document.createElement('div');
       line.className = 'ev-' + ev.kind;
       line.textContent = ev.label;

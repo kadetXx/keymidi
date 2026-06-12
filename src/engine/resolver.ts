@@ -65,10 +65,21 @@ export class Resolver {
     // Note-offs must fire even if the engine was toggled off mid-hold,
     // otherwise notes hang. So no enabled-check here.
     switch (this.state.mode) {
-      case 'piano': return this.pianoUp(key);
-      case 'chords': return this.chordUp(key);
-      case 'drums': return this.drumUp(key);
+      case 'piano':
+        if (this.activePiano.has(key)) this.emitKeyUp(key);
+        return this.pianoUp(key);
+      case 'chords':
+        if (this.heldRoots.has(key)) this.emitKeyUp(key);
+        return this.chordUp(key);
+      case 'drums':
+        if (this.activeDrums.has(key)) this.emitKeyUp(key);
+        return this.drumUp(key);
     }
+  }
+
+  /** Lets the popover un-highlight a pad when the matching key is released. */
+  private emitKeyUp(key: string): void {
+    this.emit({ ts: Date.now(), kind: 'keyup', label: key, key });
   }
 
   // ------------------------------------------------------------------ piano
@@ -84,7 +95,13 @@ export class Resolver {
     // Spell it the way it was played: 'b' when flat is held, not the
     // enharmonic sharp midiToName() would pick (B♭, not A♯).
     const acc = accidental > 0 ? '#' : accidental < 0 ? 'b' : '';
-    this.emit({ ts: Date.now(), kind: 'noteon', label: `${key}${acc}${this.state.octave}` });
+    this.emit({
+      ts: Date.now(),
+      kind: 'noteon',
+      label: `${key}${acc}${this.state.octave}`,
+      key,
+      notes: [note],
+    });
   }
 
   private pianoUp(key: string): void {
@@ -111,6 +128,8 @@ export class Resolver {
         ts: Date.now(),
         kind: 'noteon',
         label: `${key}${acc} root → ${midiToName(rootNote)}`,
+        key,
+        notes: [rootNote],
       });
       return;
     }
@@ -142,6 +161,8 @@ export class Resolver {
         label: `${root.letter}${root.acc}${quality.name} → ${chordNotes
           .map(midiToName)
           .join(' ')}`,
+        key: rootKey,
+        notes: chordNotes,
       });
     }
   }
@@ -162,7 +183,7 @@ export class Resolver {
     if (this.activeDrums.has(key)) return;
     this.midi.noteOn(pad.note, this.state.velocity, DRUM_CHANNEL);
     this.activeDrums.set(key, pad.note);
-    this.emit({ ts: Date.now(), kind: 'drum', label: pad.label });
+    this.emit({ ts: Date.now(), kind: 'drum', label: pad.label, key, notes: [pad.note] });
   }
 
   private drumUp(key: string): void {
