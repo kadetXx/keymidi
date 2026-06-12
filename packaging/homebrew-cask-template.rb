@@ -6,9 +6,6 @@
 # Per release: update `version`, then refresh both sha256 values:
 #   shasum -a 256 release/KeyMIDI-<version>-arm64.dmg
 #   shasum -a 256 release/KeyMIDI-<version>-x64.dmg
-#
-# Until the app is signed + notarized, users must install with:
-#   brew install --cask --no-quarantine kadetXx/tap/keymidi
 
 cask "keymidi" do
   version "0.1.0"

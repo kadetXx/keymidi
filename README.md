@@ -18,22 +18,13 @@ macOS only for now (Apple Silicon or Intel).
 
 ```bash
 brew install --cask kadetXx/tap/keymidi
-xattr -dr com.apple.quarantine /Applications/KeyMIDI.app
 ```
-
-The second line clears the quarantine flag: early releases aren't yet
-signed/notarized with Apple, so macOS blocks the app otherwise. (You can skip
-it and instead approve the app under **System Settings → Privacy & Security →
-Open Anyway** on first launch.) Once notarized releases ship, neither step is
-needed.
 
 ### Direct download
 
 Grab the `.dmg` for your Mac (arm64 = Apple Silicon, x64 = Intel) from
 [Releases](https://github.com/kadetXx/keymidi/releases), drag KeyMIDI to
-Applications. Until releases are notarized, macOS will block the first launch;
-go to **System Settings → Privacy & Security**, scroll down, and click
-**Open Anyway**.
+Applications, and open it.
 
 ## Accessibility permission (one-time)
 
@@ -136,17 +127,33 @@ npm run rebuild:electron   # rebuilds native modules against Electron's ABI
 npm start                  # compiles TypeScript and launches the app
 ```
 
-To package an installable DMG locally:
+To package an installable DMG locally (unsigned):
 
 ```bash
 npm run dist
 ```
 
-To publish a new release:
+To cut a signed, notarized release from your Mac:
 
 ```bash
+# 1. Bump version and push tag
 npm version patch && git push --follow-tags
+
+# 2. One-time credential setup
+cp packaging/release.sample.env packaging/release.env
+# Edit release.env — point APPLE_API_KEY at your .p8 file (keep it outside the repo)
+
+# 3. Build + sign, notarize DMGs, upload to GitHub
+npm run release:package
+npm run release:notarize
+npm run release:publish
+
+# Or all at once:
+npm run release -- --publish
 ```
+
+Scripts live in `packaging/` (`package.sh`, `notarize.sh`, `publish.sh`).
+CI no longer runs on tag push — releases are local/terminal.
 
 ## CLI debug mode
 
@@ -171,14 +178,12 @@ If it feels slow, lower Ableton's audio buffer to 64–128 samples.
 ## Troubleshooting
 
 - **macOS blocks the app after install** ("damaged", "can't be opened", or
-  quarantine dialog) → releases aren't signed/notarized yet. Either remove the
-  quarantine flag:
+  quarantine dialog) → remove the quarantine flag:
   ```bash
   xattr -dr com.apple.quarantine /Applications/KeyMIDI.app
   ```
-  or try opening KeyMIDI once, then go to **System Settings → Privacy &
-  Security** and click **Open Anyway**. Once notarized builds ship, neither
-  step is needed.
+  or open KeyMIDI once, then go to **System Settings → Privacy &
+  Security** and click **Open Anyway**.
 - **Ableton doesn't hear KeyMIDI** → check the popover footer first (the port
   LED should be green / "OPEN"), then Ableton → Settings → Link/MIDI: **KeyMIDI**
   should be listed as an input with **Track** enabled. enable it if not.

@@ -20,8 +20,10 @@
     "rebuild:electron": "electron-rebuild",
     "rebuild:node": "npm rebuild",
     "dist": "npm run build && electron-builder --mac",
-    "dist:local": "bash packaging/local-release.sh",
-    "dist:publish": "npm run build && electron-builder --mac --publish always"
+    "release:package": "bash packaging/package.sh",
+    "release:notarize": "bash packaging/notarize.sh",
+    "release:publish": "bash packaging/publish.sh",
+    "release": "bash packaging/local-release.sh"
   },
   "build": {
     "appId": "com.kadetxx.keymidi",
@@ -39,7 +41,6 @@
     "asarUnpack": [
       "**/*.node"
     ],
-    "afterSign": "packaging/notarize.cjs",
     "mac": {
       "category": "public.app-category.music",
       "icon": "packaging/icon.icns",
@@ -81,7 +82,6 @@
     "uiohook-napi": "^1.5.4"
   },
   "devDependencies": {
-    "@electron/notarize": "^2.5.0",
     "@electron/rebuild": "^3.6.0",
     "@types/node": "^20.11.0",
     "electron": "^41.7.1",

@@ -1,26 +1,22 @@
+# Releases are done locally — see packaging/package.sh, notarize.sh, publish.sh.
+# This workflow is a manual fallback only (Actions → Release → Run workflow).
 name: Release
 
-# Cut a release by pushing a version tag:
-#   npm version patch && git push --follow-tags
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
 
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
-        # One arch per job — isolated logs, half the sign/notarize work each,
-        # and x64 on native Intel avoids cross-sign hangs on Apple Silicon.
         include:
           - arch: arm64
             runner: macos-latest
           - arch: x64
             runner: macos-13
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -40,24 +36,23 @@ jobs:
           p12-file-base64: ${{ secrets.CSC_LINK }}
           p12-password: ${{ secrets.CSC_KEY_PASSWORD }}
 
-      - name: Build, sign & notarize (${{ matrix.arch }})
+      - name: Package (${{ matrix.arch }})
         env:
           CSC_KEYCHAIN_PASSWORD: ${{ steps.certs.outputs.keychain-password }}
-          DEBUG: electron-notarize*,electron-osx-sign*,electron-builder
+        run: |
+          export CSC_KEYCHAIN="$HOME/Library/Keychains/signing_temp.keychain-db"
+          ./packaging/package.sh --${{ matrix.arch }}
+
+      - name: Notarize DMG (${{ matrix.arch }})
+        env:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           APPLE_API_KEY_P8_B64: ${{ secrets.APPLE_API_KEY_P8 }}
         run: |
-          export CSC_KEYCHAIN="$HOME/Library/Keychains/signing_temp.keychain-db"
           printf '%s' "$APPLE_API_KEY_P8_B64" | base64 -d > "$RUNNER_TEMP/api_key.p8"
           export APPLE_API_KEY="$RUNNER_TEMP/api_key.p8"
-          echo "→ CSC_KEYCHAIN: $CSC_KEYCHAIN"
-          echo "→ Notarize hook: packaging/notarize.cjs"
-          echo "→ APPLE_API_KEY_ID: $APPLE_API_KEY_ID"
-          echo "→ APPLE_API_ISSUER: $APPLE_API_ISSUER"
-          test -f "$APPLE_API_KEY" && echo "→ APPLE_API_KEY: OK" || { echo "→ APPLE_API_KEY: missing"; exit 1; }
-          npm run build
-          npx electron-builder --mac --${{ matrix.arch }} --publish never
+          VERSION=$(node -p "require('./package.json').version")
+          ./packaging/notarize.sh "release/KeyMIDI-$VERSION-${{ matrix.arch }}.dmg"
           rm -f "$RUNNER_TEMP/api_key.p8"
 
       - name: Upload ${{ matrix.arch }} artifacts
@@ -75,18 +70,15 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           pattern: mac-*
           merge-multiple: true
           path: release
 
-      - name: Publish to release (overwrite existing assets)
+      - name: Publish to GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          tag="${GITHUB_REF_NAME}"
-          gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
-            || gh release create "$tag" --repo "$GITHUB_REPOSITORY" --draft --title "$tag" --notes "Automated build for $tag."
-          gh release upload "$tag" --repo "$GITHUB_REPOSITORY" --clobber \
-            release/*.dmg release/*.zip
+        run: ./packaging/publish.sh
