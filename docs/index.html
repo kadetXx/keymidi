@@ -746,30 +746,118 @@
         while (logEl.childNodes.length > 5) logEl.removeChild(logEl.firstChild);
       }
 
-      // ---- tiny poly synth (interactive demo only) ----
+      // ---- Web Audio: melodic pads + drum hits (demo only, no MIDI/samples) ----
       let ctx = null;
-      function startChord(notes) {
+      function ac() {
         ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
         if (ctx.state === 'suspended') ctx.resume();
-        const t = ctx.currentTime;
+        return ctx;
+      }
+
+      function startChord(notes) {
+        const c = ac();
+        const t = c.currentTime;
         const voices = notes.map(n => {
-          const o = ctx.createOscillator();
-          const g = ctx.createGain();
+          const o = c.createOscillator();
+          const g = c.createGain();
           o.type = 'triangle';
           o.frequency.value = 440 * Math.pow(2, (n - 69) / 12);
           g.gain.setValueAtTime(0, t);
           g.gain.linearRampToValueAtTime(0.06, t + 0.02);
-          o.connect(g).connect(ctx.destination);
+          o.connect(g).connect(c.destination);
           o.start(t);
           return { o, g };
         });
         return () => {
-          const t2 = ctx.currentTime;
+          const t2 = c.currentTime;
           voices.forEach(({ o, g }) => {
             g.gain.setTargetAtTime(0, t2, 0.09);
             o.stop(t2 + 0.6);
           });
         };
+      }
+
+      /** Short noise burst — hats, snares, claps. */
+      function noiseHit({ dur = 0.08, gain = 0.12, freq = 8000, q = 0.7, type = 'highpass' } = {}) {
+        const c = ac();
+        const t = c.currentTime;
+        const len = Math.ceil(c.sampleRate * dur);
+        const buf = c.createBuffer(1, len, c.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+        const src = c.createBufferSource();
+        src.buffer = buf;
+        const filt = c.createBiquadFilter();
+        filt.type = type;
+        filt.frequency.value = freq;
+        filt.Q.value = q;
+        const g = c.createGain();
+        g.gain.setValueAtTime(gain, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        src.connect(filt).connect(g).connect(c.destination);
+        src.start(t);
+        src.stop(t + dur + 0.02);
+      }
+
+      function playDrum(label) {
+        const c = ac();
+        const t = c.currentTime;
+        switch (label) {
+          case 'Kick': {
+            const o = c.createOscillator();
+            const g = c.createGain();
+            o.type = 'sine';
+            o.frequency.setValueAtTime(150, t);
+            o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+            g.gain.setValueAtTime(0.35, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+            o.connect(g).connect(c.destination);
+            o.start(t);
+            o.stop(t + 0.4);
+            break;
+          }
+          case 'Snare':
+            noiseHit({ dur: 0.14, gain: 0.18, freq: 1800, type: 'bandpass' });
+            break;
+          case 'Hat':
+            noiseHit({ dur: 0.04, gain: 0.07, freq: 7000 });
+            break;
+          case 'Open':
+            noiseHit({ dur: 0.22, gain: 0.09, freq: 6000 });
+            break;
+          case 'Clap':
+            for (let i = 0; i < 3; i++) {
+              setTimeout(() => noiseHit({ dur: 0.03, gain: 0.1, freq: 1200, type: 'bandpass' }), i * 12);
+            }
+            break;
+          case 'Crash':
+            noiseHit({ dur: 0.9, gain: 0.14, freq: 4000, type: 'highpass' });
+            break;
+          case 'Ride':
+            noiseHit({ dur: 0.35, gain: 0.06, freq: 5000 });
+            {
+              const o = c.createOscillator();
+              const g = c.createGain();
+              o.type = 'triangle';
+              o.frequency.value = 3200;
+              g.gain.setValueAtTime(0.04, t);
+              g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+              o.connect(g).connect(c.destination);
+              o.start(t);
+              o.stop(t + 0.55);
+            }
+            break;
+          default:
+            noiseHit({ dur: 0.1, gain: 0.1, freq: 2000, type: 'bandpass' });
+        }
+      }
+
+      function playPad(pad, mode) {
+        if (mode === 'drums') {
+          playDrum(pad.ch);
+          return () => {};
+        }
+        return startChord(pad.notes);
       }
 
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -838,7 +926,7 @@
               e.preventDefault();
               lastTouch = Date.now();
               pad.classList.add('held');
-              stop = startChord(pad._pad.notes);
+              stop = playPad(pad._pad, mode);
               logForPad(pad._pad);
             };
             const up = () => {
@@ -904,7 +992,6 @@
       const leftRoot = document.querySelector('[data-demo="animated"]');
       initDemo(mountPopShell(leftRoot, 'KeyMIDI — try the modes'), {
         startMode: 'drums',
-        autoCycleModes: true,
       });
 
       const rightRoot = document.querySelector('[data-demo="interactive"]');
