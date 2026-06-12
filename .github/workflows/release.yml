@@ -15,9 +15,10 @@ jobs:
     # Intel runners, which can sit queued for 30+ minutes.
     runs-on: macos-latest
     # Signing makes one Apple timestamp request per nested binary; if Apple's
-    # timestamp service is degraded those crawl, so cap the job rather than let
-    # it hang for hours. Re-run when Apple's timestamp load subsides.
-    timeout-minutes: 50
+    # timestamp service is degraded those crawl. Dual-arch sign + first-time
+    # notarize can legitimately take 60–90+ min, so cap high enough to finish
+    # but not burn runner hours on a truly stuck job. Re-run if it times out.
+    timeout-minutes: 120
     permissions:
       contents: write # create the GitHub Release + upload artifacts
     steps:
