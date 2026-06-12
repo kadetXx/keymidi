@@ -30,18 +30,21 @@ jobs:
         run: npm ci
 
       - name: Import Developer ID certificate
-        # THE signing-hang fix. Imports the cert into a dedicated keychain and
-        # sets its key-partition-list, so `codesign` uses the key WITHOUT the
-        # macOS "allow keychain access" prompt — that prompt is invisible in
-        # headless CI and hangs the job until timeout. electron-builder then
-        # auto-discovers this identity, so we no longer pass CSC_LINK to it.
+        # Import p12 + partition-list so codesign can use the private key without
+        # a GUI prompt. electron-builder also needs CSC_KEYCHAIN* so it signs
+        # against this keychain, not the (empty) login keychain.
+        id: certs
         uses: apple-actions/import-codesign-certs@v3
         with:
+          keychain: signing_temp
           p12-file-base64: ${{ secrets.CSC_LINK }}
           p12-password: ${{ secrets.CSC_KEY_PASSWORD }}
 
       - name: Build, sign & notarize (arm64 + x64)
         env:
+          CSC_KEYCHAIN: ${{ env.HOME }}/Library/Keychains/signing_temp.keychain-db
+          CSC_KEYCHAIN_PASSWORD: ${{ steps.certs.outputs.keychain-password }}
+          DEBUG: electron-osx-sign*,electron-builder
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           APPLE_API_KEY_P8_B64: ${{ secrets.APPLE_API_KEY_P8 }}
