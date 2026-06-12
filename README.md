@@ -1,5 +1,11 @@
 # KeyMIDI
 
+
+
+https://github.com/user-attachments/assets/5604e601-8df6-4dc7-bdb8-619c7c4a5923
+
+
+
 A macOS menu bar app that lives in the title bar and turns your computer keyboard into a stupefied MIDI
 controller for Ableton/DAWs.
 
