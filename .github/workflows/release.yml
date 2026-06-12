@@ -14,6 +14,10 @@ jobs:
     # darwin-x64 binaries), so we don't depend on GitHub's scarce macos-13
     # Intel runners, which can sit queued for 30+ minutes.
     runs-on: macos-latest
+    # Signing makes one Apple timestamp request per nested binary; if Apple's
+    # timestamp service is degraded those crawl, so cap the job rather than let
+    # it hang for hours. Re-run when Apple's timestamp load subsides.
+    timeout-minutes: 50
     permissions:
       contents: write # create the GitHub Release + upload artifacts
     steps:
