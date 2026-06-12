@@ -179,6 +179,7 @@ If it feels slow, lower Ableton's audio buffer to 64–128 samples.
 
 - **macOS blocks the app after install** ("damaged", "can't be opened", or
   quarantine dialog) → remove the quarantine flag:
+  
   ```bash
   xattr -dr com.apple.quarantine /Applications/KeyMIDI.app
   ```
