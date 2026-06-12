@@ -9,18 +9,20 @@ on:
 
 jobs:
   build:
-    # A single Apple Silicon runner builds BOTH architectures. electron-builder
-    # cross-packages the x64 app from here (the native modules ship prebuilt
-    # darwin-x64 binaries), so we don't depend on GitHub's scarce macos-13
-    # Intel runners, which can sit queued for 30+ minutes.
-    runs-on: macos-latest
-    # Signing makes one Apple timestamp request per nested binary; if Apple's
-    # timestamp service is degraded those crawl. Dual-arch sign + first-time
-    # notarize can legitimately take 60–90+ min, so cap high enough to finish
-    # but not burn runner hours on a truly stuck job. Re-run if it times out.
-    timeout-minutes: 120
-    permissions:
-      contents: write # create the GitHub Release + upload artifacts
+    strategy:
+      fail-fast: false
+      matrix:
+        # One arch per job: signing logs stay visible, failures are isolated,
+        # and each pass is ~half the timestamp round-trips of a combined build.
+        # x64 runs on Intel (macos-13): cross-signing x64 on Apple Silicon has
+        # hung for hours on codesign with no log output in CI.
+        include:
+          - arch: arm64
+            runner: macos-latest
+          - arch: x64
+            runner: macos-13
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -32,28 +34,43 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build, sign & notarize (arm64 + x64)
-        # electron-builder auto-signs when CSC_LINK/CSC_KEY_PASSWORD are present
-        # and notarizes (mac.notarize=true) using the App Store Connect API key.
-        # --publish never: we upload ourselves below to control overwrite.
+      - name: Build, sign & notarize (${{ matrix.arch }})
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           APPLE_API_KEY_P8_B64: ${{ secrets.APPLE_API_KEY_P8 }}
+          DEBUG: electron-osx-sign*
         run: |
-          # materialize the .p8 key from its base64 secret for notarytool
           printf '%s' "$APPLE_API_KEY_P8_B64" | base64 -d > "$RUNNER_TEMP/api_key.p8"
           export APPLE_API_KEY="$RUNNER_TEMP/api_key.p8"
           npm run build
-          npx electron-builder --mac --arm64 --x64 --publish never
+          npx electron-builder --mac --${{ matrix.arch }} --publish never
           rm -f "$RUNNER_TEMP/api_key.p8"
 
+      - name: Upload ${{ matrix.arch }} artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-${{ matrix.arch }}
+          path: |
+            release/*.dmg
+            release/*.zip
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mac-*
+          merge-multiple: true
+          path: release
+
       - name: Publish to release (overwrite existing assets)
-        # electron-builder's own publisher SKIPS assets that already exist on
-        # the draft, so re-runs silently serve a stale build. `gh release
-        # upload --clobber` always replaces them. Create the draft if absent.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
