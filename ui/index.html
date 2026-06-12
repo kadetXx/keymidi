@@ -500,8 +500,23 @@
     scaleSel.disabled = drums;
   }
 
-  function notesMatch(a, b) {
-    return a.length === b.length && a.every((n, i) => n === b[i]);
+  function pitchClass(note) {
+    return ((note % 12) + 12) % 12;
+  }
+
+  /** Match by pitch class — pads voice scale degrees from the root, which can
+   *  sit an octave above the letter key at the same engine octave (G major →
+   *  keyboard C is C4 but the IV pad root is C5). Absolute MIDI only lines up
+   *  when the key is C major. */
+  function pitchClassesMatch(a, b) {
+    if (a.length !== b.length) return false;
+    const pa = a.map(pitchClass).sort((x, y) => x - y);
+    const pb = b.map(pitchClass).sort((x, y) => x - y);
+    return pa.every((n, i) => n === pb[i]);
+  }
+
+  function padRootPc(p) {
+    return p.notes.length ? pitchClass(p.notes[0]) : -1;
   }
 
   /** Map a keyboard event to a visible pad index, if any. */
@@ -515,16 +530,18 @@
       const i = padDefs.findIndex((p) => p.notes[0] === ev.notes[0]);
       return { i, rootOnly: false };
     }
+    const notePc = pitchClass(ev.notes[0]);
     if (state.mode === 'piano') {
-      const i = padDefs.findIndex((p) => p.notes[0] === ev.notes[0]);
+      const i = padDefs.findIndex((p) => padRootPc(p) === notePc);
       return { i, rootOnly: false };
     }
     if (state.mode === 'chords') {
-      const exact = padDefs.findIndex((p) => notesMatch(p.notes, ev.notes));
+      const exact = padDefs.findIndex((p) => pitchClassesMatch(p.notes, ev.notes));
       if (exact >= 0) return { i: exact, rootOnly: false };
-      if (ev.kind === 'noteon' && ev.notes.length === 1) {
-        const i = padDefs.findIndex((p) => p.notes[0] === ev.notes[0]);
-        return { i, rootOnly: i >= 0 };
+      const i = padDefs.findIndex((p) => padRootPc(p) === notePc);
+      if (i >= 0) {
+        const rootOnly = ev.kind === 'noteon' || !pitchClassesMatch(padDefs[i].notes, ev.notes);
+        return { i, rootOnly };
       }
     }
     return { i: -1, rootOnly: false };
