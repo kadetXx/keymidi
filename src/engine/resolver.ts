@@ -30,8 +30,8 @@ export class Resolver {
   /** notes currently sounding, keyed by the physical key that started them */
   private activePiano = new Map<string, number>();
   private activeDrums = new Map<string, number>();
-  /** notes sounding from the popover's scale palette (mouse, not keyboard) */
-  private activePalette = new Set<number>();
+  /** notes sounding from the popover pads (mouse), keyed "channel:note" */
+  private activePalette = new Map<string, { note: number; channel: number }>();
   private heldRoots = new Map<string, HeldRoot>();
   private rootOrder: string[] = []; // most recent root last
 
@@ -175,37 +175,39 @@ export class Resolver {
   // ---------------------------------------------------------------- palette
 
   /**
-   * Scale-palette chords are tapped with the mouse in the popover, so they
-   * bypass the keyboard hook (and the enabled switch — a deliberate click is
-   * its own consent, and it lets you explore chords while paused).
+   * Pads are tapped with the mouse in the popover, so they bypass the keyboard
+   * hook (and the enabled switch — a deliberate click is its own consent, and
+   * it lets you explore while paused). `drum` routes to the GM drum channel.
    */
-  paletteDown(notes: number[], label: string): void {
+  paletteDown(notes: number[], label: string, drum = false): void {
+    const channel = drum ? DRUM_CHANNEL : MELODIC_CHANNEL;
     let sounded = false;
     for (const n of notes) {
-      if (n < 0 || n > 127 || this.activePalette.has(n)) continue;
-      this.midi.noteOn(n, this.state.velocity, MELODIC_CHANNEL);
-      this.activePalette.add(n);
+      if (n < 0 || n > 127) continue;
+      const id = `${channel}:${n}`;
+      if (this.activePalette.has(id)) continue;
+      this.midi.noteOn(n, this.state.velocity, channel);
+      this.activePalette.set(id, { note: n, channel });
       sounded = true;
     }
-    if (sounded) {
-      this.emit({
-        ts: Date.now(),
-        kind: 'chord',
-        label: `${label} → ${notes.map(midiToName).join(' ')}`,
-      });
-    }
+    if (!sounded) return;
+    const kind = drum ? 'drum' : notes.length > 1 ? 'chord' : 'noteon';
+    const detail = drum || notes.length === 1 ? label : `${label} → ${notes.map(midiToName).join(' ')}`;
+    this.emit({ ts: Date.now(), kind, label: detail });
   }
 
-  paletteUp(notes: number[]): void {
+  paletteUp(notes: number[], drum = false): void {
+    const channel = drum ? DRUM_CHANNEL : MELODIC_CHANNEL;
     for (const n of notes) {
-      if (!this.activePalette.delete(n)) continue;
-      this.midi.noteOff(n, MELODIC_CHANNEL);
+      const id = `${channel}:${n}`;
+      if (!this.activePalette.delete(id)) continue;
+      this.midi.noteOff(n, channel);
     }
   }
 
-  /** Kill palette notes only — used when the popover hides mid-hold. */
+  /** Kill pad notes only — used when the popover hides mid-hold. */
   paletteAllOff(): void {
-    for (const n of this.activePalette) this.midi.noteOff(n, MELODIC_CHANNEL);
+    for (const { note, channel } of this.activePalette.values()) this.midi.noteOff(note, channel);
     this.activePalette.clear();
   }
 

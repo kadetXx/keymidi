@@ -1,7 +1,8 @@
 import { KeyboardListener } from './listener';
 import { MidiOut } from './midi';
 import { Resolver } from './resolver';
-import { ScaleChord, ScaleName, scaleChords } from './scales';
+import { DRUM_PADS } from './drums';
+import { ScaleChord, ScaleNote, ScaleName, scaleChords, scaleNotes } from './scales';
 import {
   EngineState,
   EngineEvent,
@@ -103,19 +104,29 @@ export class Engine {
     this.emitState();
   }
 
-  // ------------------------------------------------------- scale palette
+  // -------------------------------------------------------------- pads
 
-  /** Diatonic chords for the popover's palette, voiced at the current octave. */
+  /** Diatonic chords of a key (chord-mode pads), voiced at the current octave. */
   getScaleChords(rootPc: number, scale: ScaleName): ScaleChord[] {
     return scaleChords(rootPc, scale, this.state.octave);
   }
 
-  paletteDown(notes: number[], label: string): void {
-    this.resolver.paletteDown(notes, label);
+  /** The scale's notes as single-note pads (piano-mode pads). */
+  getScaleNotes(rootPc: number, scale: ScaleName): ScaleNote[] {
+    return scaleNotes(rootPc, scale, this.state.octave);
   }
 
-  paletteUp(notes: number[]): void {
-    this.resolver.paletteUp(notes);
+  /** The GM drum pads (drum-mode pads) — fixed, not key/scale dependent. */
+  getDrumPads(): typeof DRUM_PADS {
+    return DRUM_PADS;
+  }
+
+  paletteDown(notes: number[], label: string, drum = false): void {
+    this.resolver.paletteDown(notes, label, drum);
+  }
+
+  paletteUp(notes: number[], drum = false): void {
+    this.resolver.paletteUp(notes, drum);
   }
 
   paletteAllOff(): void {

@@ -27,3 +27,11 @@ export const DRUM_MAP: Record<string, DrumPad> = {
   M: { note: 37, label: 'Rimshot' },
   N: { note: 70, label: 'Shaker' },
 };
+
+/**
+ * Pad grid — seven pads (same count as scale/chord modes). The keyboard still
+ * plays every sound in DRUM_MAP, including toms on T/Y/U; the key is the caption.
+ */
+const PAD_KEYS = ['K', 'S', 'H', 'O', 'C', 'X', 'R'];
+export const DRUM_PADS: { key: string; label: string; notes: number[] }[] =
+  PAD_KEYS.map((key) => ({ key, label: DRUM_MAP[key].label, notes: [DRUM_MAP[key].note] }));

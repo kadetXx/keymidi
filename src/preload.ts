@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { EngineEvent, EngineState, Mode } from './engine/types';
-import { ScaleChord, ScaleName } from './engine/scales';
+import { ScaleChord, ScaleNote, ScaleName } from './engine/scales';
 
 contextBridge.exposeInMainWorld('keymidi', {
   getState: (): Promise<EngineState> => ipcRenderer.invoke('keymidi:getState'),
@@ -10,8 +10,13 @@ contextBridge.exposeInMainWorld('keymidi', {
   setVelocity: (velocity: number) => ipcRenderer.send('keymidi:setVelocity', velocity),
   getScaleChords: (rootPc: number, scale: ScaleName): Promise<ScaleChord[]> =>
     ipcRenderer.invoke('keymidi:getScaleChords', rootPc, scale),
-  paletteDown: (notes: number[], label: string) => ipcRenderer.send('keymidi:paletteDown', notes, label),
-  paletteUp: (notes: number[]) => ipcRenderer.send('keymidi:paletteUp', notes),
+  getScaleNotes: (rootPc: number, scale: ScaleName): Promise<ScaleNote[]> =>
+    ipcRenderer.invoke('keymidi:getScaleNotes', rootPc, scale),
+  getDrumPads: (): Promise<{ key: string; label: string; notes: number[] }[]> =>
+    ipcRenderer.invoke('keymidi:getDrumPads'),
+  paletteDown: (notes: number[], label: string, drum = false) =>
+    ipcRenderer.send('keymidi:paletteDown', notes, label, drum),
+  paletteUp: (notes: number[], drum = false) => ipcRenderer.send('keymidi:paletteUp', notes, drum),
   quit: () => ipcRenderer.send('keymidi:quit'),
   onState: (fn: (state: EngineState) => void) =>
     ipcRenderer.on('keymidi:state', (_e: unknown, state: EngineState) => fn(state)),

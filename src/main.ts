@@ -17,7 +17,7 @@ const mb = menubar({
   icon: nativeImage.createFromPath(iconOn),
   browserWindow: {
     width: 400,
-    height: 480,
+    height: 550,
     resizable: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -94,9 +94,13 @@ ipcMain.on('keymidi:setOctave', (_e: unknown, octave: number) => engine.setOctav
 ipcMain.on('keymidi:setVelocity', (_e: unknown, velocity: number) => engine.setVelocity(velocity));
 ipcMain.handle('keymidi:getScaleChords', (_e: unknown, rootPc: number, scale: ScaleName) =>
   engine.getScaleChords(rootPc, scale));
-ipcMain.on('keymidi:paletteDown', (_e: unknown, notes: number[], label: string) =>
-  engine.paletteDown(notes, label));
-ipcMain.on('keymidi:paletteUp', (_e: unknown, notes: number[]) => engine.paletteUp(notes));
+ipcMain.handle('keymidi:getScaleNotes', (_e: unknown, rootPc: number, scale: ScaleName) =>
+  engine.getScaleNotes(rootPc, scale));
+ipcMain.handle('keymidi:getDrumPads', () => engine.getDrumPads());
+ipcMain.on('keymidi:paletteDown', (_e: unknown, notes: number[], label: string, drum: boolean) =>
+  engine.paletteDown(notes, label, drum));
+ipcMain.on('keymidi:paletteUp', (_e: unknown, notes: number[], drum: boolean) =>
+  engine.paletteUp(notes, drum));
 ipcMain.on('keymidi:quit', () => {
   engine.stop();
   app.quit();

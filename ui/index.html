@@ -138,6 +138,10 @@
   body.on .power-track { border-color: var(--led-amber); }
 
   /* ---------------------------------------------------------- sections */
+  header,
+  section:not(.log-section) {
+    flex-shrink: 0;
+  }
   section { padding: 12px 16px; border-bottom: 1px solid var(--line); }
 
   .label {
@@ -222,6 +226,11 @@
     background-position: right 10px center;
   }
   .key-select:focus-visible { outline: 1px solid var(--led-amber); }
+  .key-select:disabled {
+    color: var(--ink-dim);
+    opacity: 0.55;
+    cursor: default;
+  }
   #rootSel { flex: 0 0 84px; }
   .chord-grid {
     display: grid;
@@ -300,14 +309,16 @@
     line-height: 1.7;
     color: var(--ink-dim);
   }
-  /* Styled scrollbar — the unstyled one expands to a white track on hover. */
   #log::-webkit-scrollbar { width: 8px; }
   #log::-webkit-scrollbar-track { background: transparent; }
   #log::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
   #log::-webkit-scrollbar-thumb:hover { background: var(--ink-dim); }
-  #log .ev-chord { color: var(--led-amber); }
-  #log .ev-noteon, #log .ev-drum { color: var(--ink); }
-  #log .ev-system { color: var(--ink-dim); font-style: italic; }
+  #log > div {
+    text-transform: uppercase;
+    font-style: italic;
+    color: var(--ink-dim);
+  }
+  #log > div:last-child { color: var(--led-amber); }
   #log:empty::before {
     content: "Waiting for input — switch on and play.";
     color: var(--led-off);
@@ -315,13 +326,16 @@
 
   /* ---------------------------------------------------------- footer */
   footer {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 16px;
+    min-height: 40px;
+    padding: 13px 16px;
     border-top: 1px solid var(--line);
     font-family: var(--face);
     font-size: 10px;
+    line-height: 1;
     color: var(--ink-dim);
   }
   .port { display: flex; align-items: center; gap: 6px; }
@@ -330,13 +344,12 @@
     background: var(--led-off);
   }
   .port-led.open { background: #5dd97a; box-shadow: 0 0 6px rgba(93,217,122,0.4); }
-  #quit, #pageToggle {
+  #quit {
     background: none; border: none; cursor: pointer;
     color: var(--ink-dim);
     font-family: var(--face); font-size: 10px; letter-spacing: 0.1em;
   }
-  #quit:hover, #pageToggle:hover { color: var(--ink); }
-  #pageToggle { margin-right: 10px; color: var(--led-amber); }
+  #quit:hover { color: var(--ink); }
 
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
@@ -354,73 +367,54 @@
   </div>
 </header>
 
-<div id="pageMain">
-  <section>
-    <div class="label">Mode</div>
-    <div class="modes" id="modes">
-      <button class="mode-btn" data-mode="piano">PIANO·F6</button>
-      <button class="mode-btn" data-mode="chords">CHORD·F7</button>
-      <button class="mode-btn" data-mode="drums">DRUM·F8</button>
-    </div>
-    <div class="mode-hint" id="modeHint"></div>
-  </section>
+<section>
+  <div class="label">Mode</div>
+  <div class="modes" id="modes">
+    <button class="mode-btn" data-mode="piano">PIANO·F6</button>
+    <button class="mode-btn" data-mode="chords">CHORD·F7</button>
+    <button class="mode-btn" data-mode="drums">DRUM·F8</button>
+  </div>
+</section>
 
-  <section>
-    <div class="row">
-      <div class="stepper">
-        <div class="label">Octave<kbd>,</kbd><kbd>.</kbd></div>
-        <div class="stepper-body">
-          <button class="step-btn" id="octDown" aria-label="Octave down">−</button>
-          <div class="step-val" id="octVal">4</div>
-          <button class="step-btn" id="octUp" aria-label="Octave up">+</button>
-        </div>
+<section id="keySection">
+  <div class="label">Key</div>
+  <div class="key-row">
+    <select id="rootSel" class="key-select" aria-label="Scale root"></select>
+    <select id="scaleSel" class="key-select" aria-label="Scale">
+      <option value="major">Major</option>
+      <option value="minor">Minor</option>
+      <option value="harmonicMinor">Harmonic minor</option>
+      <option value="dorian">Dorian</option>
+      <option value="mixolydian">Mixolydian</option>
+    </select>
+  </div>
+</section>
+
+<section>
+  <div class="label" id="padLabel">Chords · tap to play · hold to sustain</div>
+  <div class="chord-grid" id="padGrid"></div>
+</section>
+
+<section id="controlsSection">
+  <div class="row">
+    <div class="stepper">
+      <div class="label">Octave<kbd>,</kbd><kbd>.</kbd></div>
+      <div class="stepper-body">
+        <button class="step-btn" id="octDown" aria-label="Octave down">−</button>
+        <div class="step-val" id="octVal">4</div>
+        <button class="step-btn" id="octUp" aria-label="Octave up">+</button>
       </div>
-      <div class="stepper">
-        <div class="label">Velocity<kbd>-</kbd><kbd>=</kbd></div>
-        <div class="stepper-body">
-          <button class="step-btn" id="velDown" aria-label="Velocity down">−</button>
-          <div class="step-val" id="velVal">100</div>
-          <button class="step-btn" id="velUp" aria-label="Velocity up">+</button>
-        </div>
+    </div>
+    <div class="stepper">
+      <div class="label">Velocity<kbd>-</kbd><kbd>=</kbd></div>
+      <div class="stepper-body">
+        <button class="step-btn" id="velDown" aria-label="Velocity down">−</button>
+        <div class="step-val" id="velVal">100</div>
+        <button class="step-btn" id="velUp" aria-label="Velocity up">+</button>
       </div>
     </div>
-  </section>
-</div>
-
-<div id="pagePalette" class="hidden">
-  <section>
-    <div class="label">Key</div>
-    <div class="key-row">
-      <select id="rootSel" class="key-select" aria-label="Scale root"></select>
-      <select id="scaleSel" class="key-select" aria-label="Scale">
-        <option value="major">Major</option>
-        <option value="minor">Minor</option>
-        <option value="harmonicMinor">Harmonic minor</option>
-        <option value="dorian">Dorian</option>
-        <option value="mixolydian">Mixolydian</option>
-      </select>
-    </div>
-  </section>
-
-  <section>
-    <div class="label">Chords · tap to play · hold to sustain</div>
-    <div class="chord-grid" id="chordGrid"></div>
-  </section>
-
-  <section>
-    <div class="row">
-      <div class="stepper">
-        <div class="label">Octave</div>
-        <div class="stepper-body">
-          <button class="step-btn" id="palOctDown" aria-label="Octave down">−</button>
-          <div class="step-val" id="palOctVal">4</div>
-          <button class="step-btn" id="palOctUp" aria-label="Octave up">+</button>
-        </div>
-      </div>
-      <div class="stepper" aria-hidden="true"></div>
-    </div>
-  </section>
-</div>
+  </div>
+</section>
 
 <section class="log-section">
   <div class="label">Signal</div>
@@ -432,21 +426,12 @@
     <div class="port-led" id="portLed"></div>
     <span id="portName">KeyMIDI</span>
   </div>
-  <div>
-    <button id="pageToggle" aria-label="Toggle scale palette">SCALES</button>
-    <button id="quit">QUIT</button>
-  </div>
+  <button id="quit">QUIT</button>
 </footer>
 
 <script>
   const api = window.keymidi;
   let state = { enabled: false, mode: 'chords', octave: 4, velocity: 100, portOpen: false, portName: 'KeyMIDI' };
-
-  const HINTS = {
-    piano:  'Play <kbd>A</kbd>–<kbd>G</kbd> · <kbd>]</kbd> sharp · <kbd>[</kbd> flat',
-    chords: 'Play <kbd>A</kbd>–<kbd>G</kbd> · <kbd>1</kbd>–<kbd>0</kbd> for chord type · <kbd>]</kbd> sharp · <kbd>[</kbd> flat',
-    drums:  '<kbd>K</kbd> kick · <kbd>S</kbd> snare · <kbd>H</kbd>/<kbd>O</kbd> hats · <kbd>C</kbd> clap · <kbd>X</kbd> crash',
-  };
 
   function render() {
     document.body.classList.toggle('on', state.enabled);
@@ -454,9 +439,7 @@
     document.querySelectorAll('.mode-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.mode === state.mode);
     });
-    document.getElementById('modeHint').innerHTML = HINTS[state.mode] || '';
     document.getElementById('octVal').textContent = state.octave;
-    document.getElementById('palOctVal').textContent = state.octave;
     document.getElementById('velVal').textContent = state.velocity;
     document.getElementById('portLed').classList.toggle('open', state.portOpen);
     document.getElementById('portName').textContent = state.portOpen
@@ -484,20 +467,17 @@
 
   document.getElementById('octDown').addEventListener('click', () => api.setOctave(state.octave - 1));
   document.getElementById('octUp').addEventListener('click', () => api.setOctave(state.octave + 1));
-  document.getElementById('palOctDown').addEventListener('click', () => api.setOctave(state.octave - 1));
-  document.getElementById('palOctUp').addEventListener('click', () => api.setOctave(state.octave + 1));
   document.getElementById('velDown').addEventListener('click', () => api.setVelocity(state.velocity - 10));
   document.getElementById('velUp').addEventListener('click', () => api.setVelocity(state.velocity + 10));
   document.getElementById('quit').addEventListener('click', () => api.quit());
 
-  // ----- scale palette
+  // ----- pads (adaptive by mode: chord triads / scale notes / drum pads)
   const ROOT_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-  const palette = { rootPc: 0, scale: 'major', chords: [] };
+  const palette = { rootPc: 0, scale: 'major' };
   const rootSel = document.getElementById('rootSel');
-  const chordGrid = document.getElementById('chordGrid');
-  const pageToggle = document.getElementById('pageToggle');
-  let onPalette = false;
-
+  const scaleSel = document.getElementById('scaleSel');
+  const padGrid = document.getElementById('padGrid');
+  const padLabel = document.getElementById('padLabel');
   ROOT_NAMES.forEach((name, pc) => {
     const opt = document.createElement('option');
     opt.value = pc;
@@ -505,65 +485,66 @@
     rootSel.appendChild(opt);
   });
 
-  async function refreshPalette() {
-    palette.chords = await api.getScaleChords(palette.rootPc, palette.scale);
-    chordGrid.innerHTML = '';
-    for (const c of palette.chords) {
+  function setKeySelectorsForMode(drums) {
+    rootSel.disabled = drums;
+    scaleSel.disabled = drums;
+  }
+
+  // The pad grid mirrors the active mode: chord triads of the key, the key's
+  // scale notes (melodies), or the GM drum kit. Each pad is { top, bottom,
+  // notes }; drums route to the drum channel. Key/scale stay visible but disabled.
+  async function renderPads() {
+    const mode = state.mode;
+    let pads, drum = false;
+    setKeySelectorsForMode(mode === 'drums');
+    if (mode === 'drums') {
+      drum = true;
+      padLabel.textContent = 'Drums · tap to play';
+      pads = (await api.getDrumPads()).map((d) => ({ top: d.key, bottom: d.label, notes: d.notes }));
+    } else if (mode === 'piano') {
+      padLabel.textContent = 'Notes · tap to play · hold to sustain';
+      pads = (await api.getScaleNotes(palette.rootPc, palette.scale))
+        .map((n) => ({ top: n.degree, bottom: n.label, notes: n.notes }));
+    } else {
+      padLabel.textContent = 'Chords · tap to play · hold to sustain';
+      pads = (await api.getScaleChords(palette.rootPc, palette.scale))
+        .map((c) => ({ top: c.numeral, bottom: c.label, notes: c.notes }));
+    }
+    padGrid.innerHTML = '';
+    for (const p of pads) {
       const btn = document.createElement('button');
       btn.className = 'chord-btn';
-      btn.innerHTML = `<span class="numeral">${c.numeral}</span><span class="name">${c.label}</span>`;
-      // mousedown/up = noteOn/off, so holding the button sustains the chord;
-      // mouseleave catches drags off the button so nothing hangs.
-      const down = () => { btn.classList.add('held'); api.paletteDown(c.notes, c.label); };
+      btn.innerHTML = `<span class="numeral">${p.top}</span><span class="name">${p.bottom}</span>`;
+      // mousedown/up = noteOn/off so holding a pad sustains; mouseleave catches
+      // a drag off the pad so nothing hangs.
+      const down = () => { btn.classList.add('held'); api.paletteDown(p.notes, p.bottom, drum); };
       const up = () => {
         if (!btn.classList.contains('held')) return;
         btn.classList.remove('held');
-        api.paletteUp(c.notes);
+        api.paletteUp(p.notes, drum);
       };
       btn.addEventListener('mousedown', down);
       btn.addEventListener('mouseup', up);
       btn.addEventListener('mouseleave', up);
-      chordGrid.appendChild(btn);
+      padGrid.appendChild(btn);
     }
   }
 
-  rootSel.addEventListener('change', () => {
-    palette.rootPc = Number(rootSel.value);
-    refreshPalette();
-  });
-
-  const scaleSel = document.getElementById('scaleSel');
-  scaleSel.addEventListener('change', () => {
-    palette.scale = scaleSel.value;
-    refreshPalette();
-  });
-
-  function showPage(paletteView) {
-    onPalette = paletteView;
-    document.getElementById('pageMain').classList.toggle('hidden', paletteView);
-    document.getElementById('pagePalette').classList.toggle('hidden', !paletteView);
-    pageToggle.textContent = paletteView ? 'KEYS' : 'SCALES';
-  }
-  pageToggle.addEventListener('click', () => showPage(!onPalette));
-  showPage(true); // scales lands first — zero-setup, the most-reached-for feature
-
-  refreshPalette();
+  rootSel.addEventListener('change', () => { palette.rootPc = Number(rootSel.value); renderPads(); });
+  scaleSel.addEventListener('change', () => { palette.scale = scaleSel.value; renderPads(); });
 
   // ----- main process → UI
   api.onState((s) => {
-    // Palette notes are voiced at the engine octave — refetch when it moves.
-    const octaveChanged = s.octave !== state.octave;
+    // Pads depend on the mode and (for chords/notes) the octave — re-render
+    // when either changes, including via the F6–F8 hotkeys.
+    const changed = s.mode !== state.mode || s.octave !== state.octave;
     state = s;
     render();
-    if (octaveChanged) refreshPalette();
+    if (changed) renderPads();
   });
 
   const log = document.getElementById('log');
   const MAX_LINES = 60;
-  // Events arrive batched from main — append the whole batch in one fragment
-  // so fast playing costs one reflow per ~30ms, not one per note. (Per-note
-  // appends + the scrollHeight read used to thrash layout hard enough to
-  // flicker the popover and back up the keyboard hook.)
   api.onEvents((evs) => {
     const frag = document.createDocumentFragment();
     for (const ev of evs) {
@@ -577,7 +558,7 @@
     log.scrollTop = log.scrollHeight;
   });
 
-  api.getState().then((s) => { state = s; render(); });
+  api.getState().then((s) => { state = s; render(); renderPads(); });
 </script>
 </body>
 </html>
