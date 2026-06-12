@@ -167,18 +167,19 @@
         user-select: none;
         text-align: left;
       }
-      /* the signal section flexes to fill, so both replicas end up identical
-         height regardless of what's above it — exactly like the app */
-      .pop section:last-of-type {
+      /* the signal section flexes to fill — same as the combined app shell */
+      .pop .log-section {
         flex: 1;
         display: flex;
         flex-direction: column;
         min-height: 0;
         border-bottom: none;
       }
-      .pop section:last-of-type .log {
+      .pop .log-section .log {
         flex: 1;
         height: auto;
+        min-height: 0;
+        overflow: hidden;
       }
       .pop header {
         display: flex;
@@ -206,12 +207,18 @@
         font-size: 9px;
         letter-spacing: 0.14em;
         text-transform: uppercase;
+        color: var(--ink-dim);
+      }
+      .pop.on .plabel {
         color: var(--ink);
       }
       .pop .led {
         width: 8px;
         height: 8px;
         border-radius: 50%;
+        background: #3a3e46;
+      }
+      .pop.on .led {
         background: var(--amber);
         box-shadow: 0 0 8px var(--amber-glow);
       }
@@ -220,17 +227,26 @@
         height: 22px;
         border-radius: 4px;
         background: var(--panel-raised);
-        border: 1px solid var(--amber);
+        border: 1px solid var(--line);
         position: relative;
+      }
+      .pop.on .track {
+        border-color: var(--amber);
       }
       .pop .thumb {
         position: absolute;
         top: 2px;
-        left: 22px;
+        left: 2px;
         width: 18px;
         height: 16px;
         border-radius: 3px;
+        background: linear-gradient(180deg, #4a4f59, #34383f);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      }
+      .pop.on .thumb {
+        left: 22px;
         background: linear-gradient(180deg, #ffc46b, #e89a2e);
+        box-shadow: none;
       }
       .pop section {
         padding: 12px 16px;
@@ -261,6 +277,10 @@
       }
       .pop .sel:first-child {
         flex: 0 0 84px;
+      }
+      .pop .sel.disabled {
+        opacity: 0.55;
+        color: var(--ink-dim);
       }
       .pop .grid {
         display: grid;
@@ -311,7 +331,8 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 10px 16px;
+        padding: 13px 16px;
+        border-top: 1px solid var(--line);
         font-size: 10px;
         color: var(--ink-dim);
         letter-spacing: 0.1em;
@@ -328,20 +349,11 @@
         background: #5dd97a;
         box-shadow: 0 0 6px rgba(93, 217, 122, 0.4);
       }
-      .pop .fbtns span {
-        margin-left: 12px;
-      }
-      .pop .fbtns .amber {
-        color: var(--amber);
-      }
-      .caption {
-        margin: 14px 0 0;
-        font-size: 12.5px;
+      .pop .quit {
+        font-family: var(--face);
+        font-size: 10px;
+        letter-spacing: 0.1em;
         color: var(--ink-dim);
-      }
-      .caption b {
-        color: var(--amber);
-        font-weight: 400;
       }
 
       /* ------------------------------------------- demos (desktop flank) */
@@ -367,6 +379,7 @@
         border: 1px solid var(--line);
         border-radius: 4px;
         text-align: center;
+        cursor: pointer;
         transition: background 200ms, color 200ms, border-color 200ms;
       }
       .pop .mbtn.active {
@@ -374,21 +387,6 @@
         background: var(--amber);
         border-color: var(--amber);
         font-weight: 600;
-      }
-      .pop .mhint {
-        margin-top: 8px;
-        font-family: var(--face);
-        font-size: 11px;
-        line-height: 1.7;
-        color: var(--ink-dim);
-        white-space: nowrap;
-        overflow: hidden;
-      }
-      .pop .mhint kbd {
-        margin: 0 1px;
-        min-width: 13px;
-        padding: 2px 2px;
-        font-size: 10px;
       }
       .pop .row {
         display: flex;
@@ -567,95 +565,8 @@
   <body>
     <div class="stage">
       <div class="demos" aria-label="App preview">
-        <!-- left: animated keyboard-modes showcase -->
-        <div class="demo demo--left">
-          <div class="pop" aria-label="KeyMIDI keyboard view — animated demo">
-            <header>
-              <div class="brand">KEY<i>MIDI</i></div>
-              <div class="power">
-                <span class="plabel">Keyboard</span>
-                <div class="led"></div>
-                <div class="track"><div class="thumb"></div></div>
-              </div>
-            </header>
-            <section>
-              <div class="lab">Mode</div>
-              <div class="modes">
-                <div class="mbtn" data-mode="piano">PIANO·F6</div>
-                <div class="mbtn" data-mode="chords">CHORD·F7</div>
-                <div class="mbtn" data-mode="drums">DRUM·F8</div>
-              </div>
-              <div class="mhint" id="khint"></div>
-            </section>
-            <section>
-              <div class="row">
-                <div class="stepper">
-                  <div class="lab">Octave</div>
-                  <div class="stepbody">
-                    <div class="b">−</div>
-                    <div class="v">4</div>
-                    <div class="b">+</div>
-                  </div>
-                </div>
-                <div class="stepper">
-                  <div class="lab">Velocity</div>
-                  <div class="stepbody">
-                    <div class="b">−</div>
-                    <div class="v">100</div>
-                    <div class="b">+</div>
-                  </div>
-                </div>
-              </div>
-            </section>
-            <section>
-              <div class="lab">Signal</div>
-              <div class="log" id="klog"></div>
-            </section>
-            <footer>
-              <div class="port">
-                <div class="dot"></div>
-                <span>KeyMIDI · OPEN</span>
-              </div>
-              <div class="fbtns"><span class="amber">SCALES</span><span>QUIT</span></div>
-            </footer>
-          </div>
-        </div>
-
-        <!-- right: interactive scales replica -->
-        <div class="demo demo--right">
-          <div class="pop" aria-label="KeyMIDI scales view — interactive">
-            <header>
-              <div class="brand">KEY<i>MIDI</i></div>
-              <div class="power">
-                <span class="plabel">Keyboard</span>
-                <div class="led"></div>
-                <div class="track"><div class="thumb"></div></div>
-              </div>
-            </header>
-            <section>
-              <div class="lab">Key</div>
-              <div class="keyrow">
-                <div class="sel">C</div>
-                <div class="sel">Major</div>
-              </div>
-            </section>
-            <section>
-              <div class="lab">Chords · tap to play · hold to sustain</div>
-              <div class="grid" id="pads"></div>
-            </section>
-            <section>
-              <div class="lab">Signal</div>
-              <div class="log" id="log"></div>
-            </section>
-            <footer>
-              <div class="port">
-                <div class="dot"></div>
-                <span>KeyMIDI · OPEN</span>
-              </div>
-              <div class="fbtns"><span class="amber">KEYS</span><span>QUIT</span></div>
-            </footer>
-          </div>
-        </div>
+        <div class="demo demo--left" data-demo="animated"></div>
+        <div class="demo demo--right" data-demo="interactive"></div>
       </div>
 
       <header class="hero">
@@ -693,7 +604,72 @@
     </div>
 
     <script>
-      // ---- the seven chords of C major, voiced like the app (octave 4) ----
+      // ---- combined popover shell (matches ui/index.html layout) ----
+      function mountPopShell(root, label) {
+        root.innerHTML = `
+          <div class="pop on" aria-label="${label}">
+            <header>
+              <div class="brand">KEY<i>MIDI</i></div>
+              <div class="power">
+                <span class="plabel">Keyboard</span>
+                <div class="led"></div>
+                <div class="track"><div class="thumb"></div></div>
+              </div>
+            </header>
+            <section>
+              <div class="lab">Mode</div>
+              <div class="modes">
+                <button type="button" class="mbtn" data-mode="piano">PIANO·F6</button>
+                <button type="button" class="mbtn" data-mode="chords">CHORD·F7</button>
+                <button type="button" class="mbtn" data-mode="drums">DRUM·F8</button>
+              </div>
+            </section>
+            <section>
+              <div class="lab">Key</div>
+              <div class="keyrow">
+                <div class="sel" data-key-root>C</div>
+                <div class="sel" data-key-scale>Major</div>
+              </div>
+            </section>
+            <section>
+              <div class="lab" data-pad-label>Chords · tap to play · hold to sustain</div>
+              <div class="grid" data-pads></div>
+            </section>
+            <section>
+              <div class="row">
+                <div class="stepper">
+                  <div class="lab">Octave</div>
+                  <div class="stepbody">
+                    <div class="b">−</div>
+                    <div class="v">4</div>
+                    <div class="b">+</div>
+                  </div>
+                </div>
+                <div class="stepper">
+                  <div class="lab">Velocity</div>
+                  <div class="stepbody">
+                    <div class="b">−</div>
+                    <div class="v">100</div>
+                    <div class="b">+</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <section class="log-section">
+              <div class="lab">Signal</div>
+              <div class="log" data-log></div>
+            </section>
+            <footer>
+              <div class="port">
+                <div class="dot"></div>
+                <span>KeyMIDI · OPEN</span>
+              </div>
+              <span class="quit">QUIT</span>
+            </footer>
+          </div>`;
+        return root.querySelector('.pop');
+      }
+
       const CHORDS = [
         { nm: 'I', ch: 'C', notes: [60, 64, 67] },
         { nm: 'ii', ch: 'Dm', notes: [62, 65, 69] },
@@ -703,10 +679,74 @@
         { nm: 'vi', ch: 'Am', notes: [69, 72, 76] },
         { nm: 'vii°', ch: 'Bdim', notes: [71, 74, 77] },
       ];
+      const NOTES = [
+        { nm: '1', ch: 'C', notes: [60] },
+        { nm: '2', ch: 'D', notes: [62] },
+        { nm: '3', ch: 'E', notes: [64] },
+        { nm: '4', ch: 'F', notes: [65] },
+        { nm: '5', ch: 'G', notes: [67] },
+        { nm: '6', ch: 'A', notes: [69] },
+        { nm: '7', ch: 'B', notes: [71] },
+      ];
+      const DRUMS = [
+        { nm: 'K', ch: 'Kick', notes: [36] },
+        { nm: 'S', ch: 'Snare', notes: [38] },
+        { nm: 'H', ch: 'Hat', notes: [42] },
+        { nm: 'O', ch: 'Open', notes: [46] },
+        { nm: 'C', ch: 'Clap', notes: [39] },
+        { nm: 'X', ch: 'Crash', notes: [49] },
+        { nm: 'R', ch: 'Ride', notes: [51] },
+      ];
+      const MODE_PADS = {
+        chords: {
+          label: 'Chords · tap to play · hold to sustain',
+          pads: CHORDS,
+          keyDisabled: false,
+        },
+        piano: {
+          label: 'Notes · tap to play · hold to sustain',
+          pads: NOTES,
+          keyDisabled: false,
+        },
+        drums: {
+          label: 'Drums · tap to play',
+          pads: DRUMS,
+          keyDisabled: true,
+        },
+      };
       const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
       const noteName = n => NAMES[n % 12] + (Math.floor(n / 12) - 1);
 
-      // ---- tiny poly synth so the replica actually makes sound ----
+      function renderPads(pop, mode, interactive) {
+        const cfg = MODE_PADS[mode];
+        pop.querySelector('[data-pad-label]').textContent = cfg.label;
+        pop.querySelector('[data-key-root]').classList.toggle('disabled', cfg.keyDisabled);
+        pop.querySelector('[data-key-scale]').classList.toggle('disabled', cfg.keyDisabled);
+        pop.querySelectorAll('.mbtn').forEach(b => {
+          b.classList.toggle('active', b.dataset.mode === mode);
+        });
+        const grid = pop.querySelector('[data-pads]');
+        grid.innerHTML = '';
+        cfg.pads.forEach(p => {
+          const el = document.createElement(interactive ? 'button' : 'div');
+          el.className = 'pad';
+          if (interactive) el.style.font = 'inherit';
+          el.innerHTML = `<span class="nm">${p.nm}</span><span class="ch">${p.ch}</span>`;
+          el._pad = p;
+          grid.appendChild(el);
+        });
+        return [...grid.children];
+      }
+
+      function appendLog(logEl, text, cls = 'amber') {
+        const div = document.createElement('div');
+        div.className = cls;
+        div.textContent = text;
+        logEl.appendChild(div);
+        while (logEl.childNodes.length > 5) logEl.removeChild(logEl.firstChild);
+      }
+
+      // ---- tiny poly synth (interactive demo only) ----
       let ctx = null;
       function startChord(notes) {
         ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
@@ -732,71 +772,11 @@
         };
       }
 
-      // ---- build the pads ----
-      const grid = document.getElementById('pads');
-      const log = document.getElementById('log');
-      let lastTouch = 0;
-
-      function logLine(c) {
-        const div = document.createElement('div');
-        div.className = 'amber';
-        div.textContent = `${c.ch} → ${c.notes.map(noteName).join(' ')}`;
-        log.appendChild(div);
-        while (log.childNodes.length > 5) log.removeChild(log.firstChild);
-      }
-
-      CHORDS.forEach(c => {
-        const pad = document.createElement('button');
-        pad.className = 'pad';
-        pad.style.font = 'inherit';
-        pad.innerHTML = `<span class="nm">${c.nm}</span><span class="ch">${c.ch}</span>`;
-        let stop = null;
-        const down = e => {
-          e.preventDefault();
-          lastTouch = Date.now();
-          pad.classList.add('held');
-          stop = startChord(c.notes);
-          logLine(c);
-        };
-        const up = () => {
-          pad.classList.remove('held');
-          if (stop) {
-            stop();
-            stop = null;
-          }
-        };
-        pad.addEventListener('pointerdown', down);
-        pad.addEventListener('pointerup', up);
-        pad.addEventListener('pointerleave', up);
-        pad.addEventListener('pointercancel', up);
-        grid.appendChild(pad);
-        c.el = pad;
-      });
-
-      // ---- silent auto-demo: the four chords of pop, until the visitor plays ----
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const SEQ = [0, 4, 5, 3]; // I V vi IV
-      let step = 0;
-      if (!reduced) {
-        setInterval(() => {
-          if (Date.now() - lastTouch < 6000) return; // visitor is playing — stay quiet
-          const c = CHORDS[SEQ[step % SEQ.length]];
-          step++;
-          c.el.classList.add('held');
-          logLine(c);
-          setTimeout(() => c.el.classList.remove('held'), 520);
-        }, 950);
-      } else {
-        CHORDS.slice(0, 3).forEach(logLine);
-      }
 
-      // ---- second replica: animated keyboard-modes showcase ----------------
-      // Cycles chords → piano → drums with the app's real helper texts and
-      // sample signal lines. Purely visual: no sound, no clickable keys.
       const KMODES = [
         {
           id: 'chords',
-          hint: 'Play <kbd>A</kbd>–<kbd>G</kbd> · <kbd>1</kbd>–<kbd>0</kbd> for chord type · <kbd>]</kbd> sharp · <kbd>[</kbd> flat',
           lines: [
             ['Gmaj7 → G4 B4 D5 F#5', 'amber'],
             ['C → C4 E4 G4', 'amber'],
@@ -805,7 +785,6 @@
         },
         {
           id: 'piano',
-          hint: 'Play <kbd>A</kbd>–<kbd>G</kbd> · <kbd>]</kbd> sharp · <kbd>[</kbd> flat',
           lines: [
             ['C4', 'ink'],
             ['E4', 'ink'],
@@ -815,7 +794,6 @@
         },
         {
           id: 'drums',
-          hint: '<kbd>K</kbd> kick · <kbd>S</kbd> snare · <kbd>H</kbd>/<kbd>O</kbd> hats · <kbd>C</kbd> clap · <kbd>X</kbd> crash',
           lines: [
             ['Kick', 'ink'],
             ['Snare', 'ink'],
@@ -824,41 +802,118 @@
           ],
         },
       ];
-      const khint = document.getElementById('khint');
-      const klog = document.getElementById('klog');
-      const kbtns = [...document.querySelectorAll('.mbtn')];
-      let kEmitTimer = null;
 
-      function showMode(m) {
-        kbtns.forEach(b => b.classList.toggle('active', b.dataset.mode === m.id));
-        khint.innerHTML = m.hint;
-        klog.innerHTML = '';
-        clearTimeout(kEmitTimer);
-        let li = 0;
-        const emit = () => {
-          if (li >= m.lines.length) return;
-          const [text, cls] = m.lines[li++];
-          const div = document.createElement('div');
-          div.className = cls;
-          div.textContent = text;
-          klog.appendChild(div);
-          while (klog.childNodes.length > 6) klog.removeChild(klog.firstChild);
-          kEmitTimer = setTimeout(emit, 460);
-        };
-        emit();
+      function initDemo(pop, { startMode = 'chords', autoCycleModes = false, autoChordSeq = false } = {}) {
+        let mode = startMode;
+        let pads = [];
+        let lastTouch = 0;
+        let emitTimer = null;
+        const logEl = pop.querySelector('[data-log]');
+
+        function logForPad(p) {
+          if (mode === 'drums') appendLog(logEl, p.ch, 'ink');
+          else if (p.notes.length > 1) appendLog(logEl, `${p.ch} → ${p.notes.map(noteName).join(' ')}`);
+          else appendLog(logEl, p.ch, 'ink');
+        }
+
+        function animateSignal(modeId) {
+          const sample = KMODES.find(m => m.id === modeId);
+          if (!sample) return;
+          logEl.innerHTML = '';
+          clearTimeout(emitTimer);
+          let li = 0;
+          const emit = () => {
+            if (li >= sample.lines.length) return;
+            const [text, cls] = sample.lines[li++];
+            appendLog(logEl, text, cls);
+            emitTimer = setTimeout(emit, 460);
+          };
+          emit();
+        }
+
+        function wirePads() {
+          pads.forEach(pad => {
+            let stop = null;
+            const down = e => {
+              e.preventDefault();
+              lastTouch = Date.now();
+              pad.classList.add('held');
+              stop = startChord(pad._pad.notes);
+              logForPad(pad._pad);
+            };
+            const up = () => {
+              pad.classList.remove('held');
+              if (stop) {
+                stop();
+                stop = null;
+              }
+            };
+            pad.addEventListener('pointerdown', down);
+            pad.addEventListener('pointerup', up);
+            pad.addEventListener('pointerleave', up);
+            pad.addEventListener('pointercancel', up);
+          });
+        }
+
+        function setMode(next, user = false) {
+          mode = next;
+          if (user) {
+            lastTouch = Date.now();
+            logEl.innerHTML = '';
+          }
+          pads = renderPads(pop, mode, true);
+          wirePads();
+          if (!user) animateSignal(mode);
+        }
+
+        pop.querySelectorAll('.mbtn').forEach(btn => {
+          btn.addEventListener('click', () => setMode(btn.dataset.mode, true));
+        });
+
+        setMode(startMode);
+
+        if (autoCycleModes && !reduced) {
+          const ids = KMODES.map(m => m.id);
+          setInterval(() => {
+            if (Date.now() - lastTouch < 6000) return;
+            const idx = (ids.indexOf(mode) + 1) % ids.length;
+            setMode(ids[idx]);
+          }, 2800);
+        }
+
+        if (autoChordSeq && !reduced) {
+          const SEQ = [0, 4, 5, 3];
+          let seqStep = 0;
+          setInterval(() => {
+            if (mode !== 'chords') return;
+            if (Date.now() - lastTouch < 6000) return;
+            const idx = SEQ[seqStep % SEQ.length];
+            seqStep++;
+            const pad = pads[idx];
+            const c = CHORDS[idx];
+            if (!pad) return;
+            pad.classList.add('held');
+            appendLog(logEl, `${c.ch} → ${c.notes.map(noteName).join(' ')}`);
+            setTimeout(() => pad.classList.remove('held'), 520);
+          }, 950);
+        }
+
+        return { setMode, getMode: () => mode };
       }
 
-      let kmi = 0;
-      showMode(KMODES[0]);
-      if (!reduced) {
-        setInterval(() => {
-          kmi = (kmi + 1) % KMODES.length;
-          showMode(KMODES[kmi]);
-        }, 2800);
-      }
+      const leftRoot = document.querySelector('[data-demo="animated"]');
+      initDemo(mountPopShell(leftRoot, 'KeyMIDI — try the modes'), {
+        startMode: 'drums',
+        autoCycleModes: true,
+      });
 
-      // ---- Mac download: direct .dmg when arch is known, else releases page ----
-      const RELEASES_URL = 'https://github.com/kadetXx/keymidi/releases/latest';
+      const rightRoot = document.querySelector('[data-demo="interactive"]');
+      initDemo(mountPopShell(rightRoot, 'KeyMIDI — tap the pads'), {
+        startMode: 'chords',
+        autoChordSeq: true,
+      });
+
+      // ---- Mac download: direct .dmg when arch is known ----
       const isMac =
         /Mac|Macintosh|Mac OS X/i.test(navigator.userAgent) ||
         navigator.platform === 'MacIntel' ||
@@ -903,7 +958,6 @@
           }
         } catch (_) {}
       })();
-
     </script>
   </body>
 </html>
