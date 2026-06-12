@@ -9,15 +9,18 @@ on:
 
 jobs:
   build:
-    # One Apple Silicon runner builds + signs BOTH arches (x64 cross-signed).
-    # The earlier "x64 hangs for hours on codesign" was the headless keychain
-    # prompt fixed below — not cross-signing — so we don't need the scarce
-    # macos-13 Intel runner. timeout-minutes fails fast if Apple's notary is
-    # backed up rather than burning the default 6h.
-    runs-on: macos-latest
-    timeout-minutes: 40
-    permissions:
-      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # One arch per job — isolated logs, half the sign/notarize work each,
+        # and x64 on native Intel avoids cross-sign hangs on Apple Silicon.
+        include:
+          - arch: arm64
+            runner: macos-latest
+          - arch: x64
+            runner: macos-13
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -30,9 +33,6 @@ jobs:
         run: npm ci
 
       - name: Import Developer ID certificate
-        # Import p12 + partition-list so codesign can use the private key without
-        # a GUI prompt. electron-builder also needs CSC_KEYCHAIN* so it signs
-        # against this keychain, not the (empty) login keychain.
         id: certs
         uses: apple-actions/import-codesign-certs@v3
         with:
@@ -40,7 +40,7 @@ jobs:
           p12-file-base64: ${{ secrets.CSC_LINK }}
           p12-password: ${{ secrets.CSC_KEY_PASSWORD }}
 
-      - name: Build, sign & notarize (arm64 + x64)
+      - name: Build, sign & notarize (${{ matrix.arch }})
         env:
           CSC_KEYCHAIN_PASSWORD: ${{ steps.certs.outputs.keychain-password }}
           DEBUG: electron-osx-sign*,electron-builder
@@ -48,19 +48,35 @@ jobs:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           APPLE_API_KEY_P8_B64: ${{ secrets.APPLE_API_KEY_P8 }}
         run: |
-          # env.HOME is empty in workflow env: — must use shell $HOME or import
-          # looks in /Library/Keychains/ and finds 0 identities (signing skipped).
           export CSC_KEYCHAIN="$HOME/Library/Keychains/signing_temp.keychain-db"
-          # materialize the App Store Connect API key for notarization
           printf '%s' "$APPLE_API_KEY_P8_B64" | base64 -d > "$RUNNER_TEMP/api_key.p8"
           export APPLE_API_KEY="$RUNNER_TEMP/api_key.p8"
           npm run build
-          npx electron-builder --mac --arm64 --x64 --publish never
+          npx electron-builder --mac --${{ matrix.arch }} --publish never
           rm -f "$RUNNER_TEMP/api_key.p8"
 
+      - name: Upload ${{ matrix.arch }} artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-${{ matrix.arch }}
+          path: |
+            release/*.dmg
+            release/*.zip
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mac-*
+          merge-multiple: true
+          path: release
+
       - name: Publish to release (overwrite existing assets)
-        # electron-builder's own publisher skips assets that already exist on a
-        # draft; `gh release upload --clobber` always replaces them.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
