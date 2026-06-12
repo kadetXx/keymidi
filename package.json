@@ -1,6 +1,6 @@
 {
   "name": "keymidi",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "macOS menu bar app that turns your computer keyboard into a context-aware MIDI controller (real-time chord grammar + mnemonic drums).",
   "main": "dist/main.js",
   "private": true,
