@@ -41,6 +41,7 @@
     "mac": {
       "category": "public.app-category.music",
       "icon": "packaging/icon.icns",
+      "notarize": true,
       "target": [
         {
           "target": "dmg",
