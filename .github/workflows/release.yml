@@ -1,6 +1,6 @@
 # Releases are done locally — see packaging/package.sh, notarize.sh, publish.sh.
-# This workflow is a manual fallback only (Actions → Release → Run workflow).
-name: Release
+# This workflow is a manual fallback only (Actions → release → Run workflow).
+name: release
 
 on:
   workflow_dispatch:
@@ -13,8 +13,9 @@ jobs:
         include:
           - arch: arm64
             runner: macos-latest
+          # x64 cross-compiles on Apple Silicon runners — avoids macos-13 queue
           - arch: x64
-            runner: macos-13
+            runner: macos-latest
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
     steps:
