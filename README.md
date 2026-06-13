@@ -139,27 +139,24 @@ To package an installable DMG locally (unsigned):
 npm run dist
 ```
 
-To cut a signed, notarized release from your Mac:
+To cut a release (CI builds, notarizes, and publishes on tag push):
 
 ```bash
-# 1. Bump version and push tag
 npm version patch && git push --follow-tags
+```
 
-# 2. One-time credential setup
+Watch progress: Actions → release. Or `gh run list --workflow=release.yml`.
+
+Local fallback (same scripts CI uses):
+
+```bash
 cp packaging/release.sample.env packaging/release.env
 # Edit release.env — point APPLE_API_KEY at your .p8 file (keep it outside the repo)
 
-# 3. Build + sign, notarize DMGs, upload to GitHub
-npm run release:package
-npm run release:notarize
-npm run release:publish
-
-# Or all at once:
 npm run release -- --publish
 ```
 
 Scripts live in `packaging/` (`package.sh`, `notarize.sh`, `publish.sh`).
-CI no longer runs on tag push — releases are local/terminal.
 
 ## CLI debug mode
 

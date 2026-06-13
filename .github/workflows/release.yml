@@ -1,8 +1,11 @@
-# Releases are done locally — see packaging/package.sh, notarize.sh, publish.sh.
-# This workflow is a manual fallback only (Actions → release → Run workflow).
+# CI release on tag push (primary). Manual fallback: Actions → release → Run workflow.
+# Flow: npm version patch && git push --follow-tags
 name: release
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -20,6 +23,9 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Tag push: checkout the tagged commit (package.json version must match tag).
+          ref: ${{ github.ref }}
 
       - uses: actions/setup-node@v4
         with:
@@ -72,6 +78,9 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Tag push: checkout the tagged commit (package.json version must match tag).
+          ref: ${{ github.ref }}
 
       - uses: actions/download-artifact@v4
         with:
