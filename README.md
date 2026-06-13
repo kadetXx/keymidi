@@ -18,7 +18,7 @@ What makes it different from Easy MIDI / MidiKeys / Ableton's built-in keyboard:
 
 ## Install
 
-macOS only for now (Apple Silicon or Intel).
+MacOS only for now (Apple Silicon or Intel).
 
 ### Homebrew
 
